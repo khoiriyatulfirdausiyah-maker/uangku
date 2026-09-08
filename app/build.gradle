@@ -1,0 +1,48 @@
+plugins {
+    id 'com.android.application'
+}
+
+def releaseKeystorePath = System.getenv("UANGKU_KEYSTORE_PATH")
+def releaseStorePassword = System.getenv("UANGKU_KEYSTORE_PASSWORD")
+def releaseKeyAlias = System.getenv("UANGKU_KEY_ALIAS")
+def releaseKeyPassword = System.getenv("UANGKU_KEY_PASSWORD")
+def releaseSigningReady = releaseKeystorePath && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+
+android {
+    namespace 'com.uangku.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.uangku.app"
+        minSdk 24
+        targetSdk 35
+        versionCode 82
+        versionName "8.2.0"
+    }
+
+    signingConfigs {
+        release {
+            if (releaseSigningReady) {
+                storeFile file(releaseKeystorePath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (releaseSigningReady) {
+                signingConfig signingConfigs.release
+            }
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    implementation 'com.google.mlkit:text-recognition:16.0.1'
+    implementation 'androidx.core:core:1.15.0'
+}
