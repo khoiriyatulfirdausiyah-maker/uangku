@@ -36,8 +36,14 @@ jobs:
       - name: UangKu receipt scanner tests
         run: node tests/receipt-scanner.js
 
+      - name: UangKu receipt accuracy tests
+        run: node tests/receipt-accuracy.js
+
       - name: UangKu native voice tests
         run: node tests/native-voice.js
+
+      - name: UangKu voice recovery tests
+        run: node tests/voice-recovery.js
 
       - name: Setup Java 17
         uses: actions/setup-java@v5
@@ -72,7 +78,7 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Release signing secrets belum lengkap. Debug APK tetap dibuat, tetapi JANGAN dipakai sebagai jalur update harian."
+            echo "::warning::Release signing secrets belum lengkap. Debug APK tetap dibuat."
           fi
 
       - name: Decode release keystore
@@ -94,12 +100,12 @@ jobs:
       - name: Upload test/debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: UangKu-v8.5-TEST-debug-apk
+          name: UangKu-v8.7-TEST-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload signed release APK
         if: steps.signing.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: UangKu-v8.5-SIGNED-release-apk
+          name: UangKu-v8.7-SIGNED-release-apk
           path: app/build/outputs/apk/release/app-release.apk
