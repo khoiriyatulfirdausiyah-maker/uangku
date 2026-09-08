@@ -20,5 +20,5 @@ ok(js.includes('function toggleThemeV82()'),'theme-toggle-function');
 ok(js.includes("$('#themeToggle')?.classList.toggle('hidden',!home)"),'theme-home-only');
 ok(css.includes('html[data-theme="dark"]'),'dark-theme-css-present');
 ok(css.includes('.theme-sun-v82')&&css.includes('.theme-moon-v82'),'theme-icon-css-present');
-ok(js.includes("const APP_VERSION='8.5.0';"),'app-version-8.5');
-ok(/versionCode\s+85/.test(gradle)&&/versionName\s+"8\.5\.0"/.test(gradle),'android-version-8.5');
+ok(js.includes("const APP_VERSION='8.7.0';"),'app-version-8.6');
+ok(/versionCode\s+87/.test(gradle)&&/versionName\s+"8\.7\.0"/.test(gradle),'android-version-8.6');

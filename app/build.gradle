@@ -23,8 +23,8 @@ android {
         applicationId "com.uangku.app"
         minSdk 24
         targetSdk 35
-        versionCode 85
-        versionName "8.5.0"
+        versionCode 87
+        versionName "8.7.0"
     }
 
     signingConfigs {

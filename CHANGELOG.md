@@ -1,5 +1,27 @@
 # Changelog
 
+## 8.7.0 — Voice Recovery
+
+- Memperbaiki race condition SpeechRecognizer yang dapat membuat halaman voice langsung berhenti.
+- Menambahkan session token untuk mengabaikan callback sesi lama.
+- Menambahkan fallback otomatis ke pengenal suara Android sistem.
+- Error voice tidak lagi langsung menutup halaman Voice.
+- Menambahkan tombol Coba lagi.
+- Menambahkan `tests/voice-recovery.js`.
+- `versionCode` 87 / `versionName` 8.7.0.
+
+## 8.6.0 — Receipt Accuracy & Performance
+
+- Total belanja diprioritaskan dari label total dan mengecualikan cash/tender/change/payment noise.
+- Tanggal OCR mendukung tahun 2/4 digit dan nama bulan Indonesia/Inggris.
+- Nama barang diekstrak sebagai catatan transaksi.
+- OCR dan thumbnail preview berjalan paralel.
+- Preview scanner diturunkan ke 900px/JPEG 68 tanpa menurunkan resolusi OCR.
+- Menghindari data URI besar di template render receipt.
+- Menambahkan content-visibility dan shadow lebih ringan untuk mengurangi repaint.
+- Menambahkan `tests/receipt-accuracy.js`.
+- `versionCode` 86 / `versionName` 8.6.0.
+
 ## 8.5.0 — Native Voice Fix
 
 - Mengganti jalur utama voice ke Android `SpeechRecognizer` native.

@@ -64,7 +64,10 @@ public class MainActivity extends Activity {
     private boolean ttsReady = false;
     private SpeechRecognizer speechRecognizer;
     private boolean voiceListening = false;
-    private boolean suppressNextVoiceError = false;
+    private boolean voiceSpeechStarted = false;
+    private boolean voiceFallbackTried = false;
+    private long voiceSessionId = 0L;
+    private long voiceStartedAtMs = 0L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -359,106 +362,218 @@ public class MainActivity extends Activity {
 
     private void launchVoiceRecognizer() {
         runOnUiThread(() -> {
-            stopVoiceRecognizer(true);
-            suppressNextVoiceError = false;
+            if (textToSpeech != null) {
+                try { textToSpeech.stop(); } catch (Exception ignored) {}
+            }
 
-            if (SpeechRecognizer.isRecognitionAvailable(this)) {
-                try {
-                    speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
-                    speechRecognizer.setRecognitionListener(new RecognitionListener() {
-                        @Override
-                        public void onReadyForSpeech(Bundle params) {
-                            voiceListening = true;
-                            callJs("window.onVoiceListening && window.onVoiceListening()");
+            cancelCurrentVoiceSession();
+
+            final long sessionId = ++voiceSessionId;
+            voiceListening = false;
+            voiceSpeechStarted = false;
+            voiceFallbackTried = false;
+            voiceStartedAtMs = System.currentTimeMillis();
+
+            callJs("window.onVoicePreparing && window.onVoicePreparing()");
+
+            if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+                launchSystemVoiceFallback(sessionId);
+                return;
+            }
+
+            startDirectVoiceRecognizer(sessionId);
+        });
+    }
+
+    private void startDirectVoiceRecognizer(final long sessionId) {
+        runOnUiThread(() -> {
+            if (sessionId != voiceSessionId) return;
+
+            try {
+                final SpeechRecognizer recognizer = SpeechRecognizer.createSpeechRecognizer(this);
+                speechRecognizer = recognizer;
+
+                recognizer.setRecognitionListener(new RecognitionListener() {
+                    @Override
+                    public void onReadyForSpeech(Bundle params) {
+                        if (!isCurrentVoiceSession(sessionId, recognizer)) return;
+                        voiceListening = true;
+                        callJs("window.onVoiceListening && window.onVoiceListening()");
+                    }
+
+                    @Override
+                    public void onBeginningOfSpeech() {
+                        if (!isCurrentVoiceSession(sessionId, recognizer)) return;
+                        voiceSpeechStarted = true;
+                        callJs("window.onVoiceSpeechStart && window.onVoiceSpeechStart()");
+                    }
+
+                    @Override public void onRmsChanged(float rmsdB) {}
+                    @Override public void onBufferReceived(byte[] buffer) {}
+
+                    @Override
+                    public void onEndOfSpeech() {
+                        if (!isCurrentVoiceSession(sessionId, recognizer)) return;
+                        callJs("window.onVoiceSpeechEnd && window.onVoiceSpeechEnd()");
+                    }
+
+                    @Override
+                    public void onError(int error) {
+                        if (!isCurrentVoiceSession(sessionId, recognizer)) return;
+
+                        voiceListening = false;
+                        destroySpecificRecognizer(recognizer);
+
+                        if (shouldTryVoiceFallback(error)) {
+                            launchSystemVoiceFallback(sessionId);
+                            return;
                         }
 
-                        @Override
-                        public void onBeginningOfSpeech() {
-                            callJs("window.onVoiceSpeechStart && window.onVoiceSpeechStart()");
-                        }
+                        callJs(
+                            "window.onVoiceError && window.onVoiceError(" +
+                            JSONObject.quote(voiceErrorMessage(error)) +
+                            ")"
+                        );
+                    }
 
-                        @Override public void onRmsChanged(float rmsdB) {}
-                        @Override public void onBufferReceived(byte[] buffer) {}
+                    @Override
+                    public void onResults(Bundle results) {
+                        if (!isCurrentVoiceSession(sessionId, recognizer)) return;
 
-                        @Override
-                        public void onEndOfSpeech() {
-                            callJs("window.onVoiceSpeechEnd && window.onVoiceSpeechEnd()");
-                        }
+                        voiceListening = false;
+                        ArrayList<String> matches = results == null
+                            ? null
+                            : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
 
-                        @Override
-                        public void onError(int error) {
-                            voiceListening = false;
-                            boolean silent = suppressNextVoiceError;
-                            suppressNextVoiceError = false;
-                            destroySpeechRecognizer();
-                            if (silent) return;
+                        destroySpecificRecognizer(recognizer);
 
+                        if (matches != null && !matches.isEmpty()) {
+                            callJs(
+                                "window.onVoiceResult && window.onVoiceResult(" +
+                                JSONObject.quote(matches.get(0)) +
+                                ")"
+                            );
+                        } else {
                             callJs(
                                 "window.onVoiceError && window.onVoiceError(" +
-                                JSONObject.quote(voiceErrorMessage(error)) +
+                                JSONObject.quote("Aku belum menangkap ucapanmu. Coba lagi dengan kalimat sedikit lebih pelan.") +
                                 ")"
                             );
                         }
+                    }
 
-                        @Override
-                        public void onResults(Bundle results) {
-                            voiceListening = false;
-                            ArrayList<String> matches = results == null
-                                ? null
-                                : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                            destroySpeechRecognizer();
+                    @Override
+                    public void onPartialResults(Bundle partialResults) {
+                        if (!isCurrentVoiceSession(sessionId, recognizer)) return;
 
-                            if (matches != null && !matches.isEmpty()) {
-                                callJs(
-                                    "window.onVoiceResult && window.onVoiceResult(" +
-                                    JSONObject.quote(matches.get(0)) +
-                                    ")"
-                                );
-                            } else {
-                                callJs(
-                                    "window.onVoiceError && window.onVoiceError(" +
-                                    JSONObject.quote("Aku belum menangkap ucapanmu. Coba lagi dengan kalimat sedikit lebih pelan.") +
-                                    ")"
-                                );
-                            }
+                        ArrayList<String> partial = partialResults == null
+                            ? null
+                            : partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+
+                        if (partial != null && !partial.isEmpty()) {
+                            callJs(
+                                "window.onVoicePartial && window.onVoicePartial(" +
+                                JSONObject.quote(partial.get(0)) +
+                                ")"
+                            );
                         }
+                    }
 
-                        @Override
-                        public void onPartialResults(Bundle partialResults) {
-                            ArrayList<String> partial = partialResults == null
-                                ? null
-                                : partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                            if (partial != null && !partial.isEmpty()) {
-                                callJs(
-                                    "window.onVoicePartial && window.onVoicePartial(" +
-                                    JSONObject.quote(partial.get(0)) +
-                                    ")"
-                                );
-                            }
-                        }
+                    @Override public void onEvent(int eventType, Bundle params) {}
+                });
 
-                        @Override public void onEvent(int eventType, Bundle params) {}
-                    });
+                recognizer.startListening(buildVoiceIntent());
+            } catch (Exception directError) {
+                destroySpecificRecognizer(speechRecognizer);
+                launchSystemVoiceFallback(sessionId);
+            }
+        });
+    }
 
-                    speechRecognizer.startListening(buildVoiceIntent());
-                    return;
-                } catch (Exception directError) {
-                    destroySpeechRecognizer();
-                }
+    private boolean isCurrentVoiceSession(long sessionId, SpeechRecognizer recognizer) {
+        return sessionId == voiceSessionId && speechRecognizer == recognizer;
+    }
+
+    private boolean shouldTryVoiceFallback(int error) {
+        if (voiceFallbackTried) return false;
+
+        long elapsed = Math.max(0L, System.currentTimeMillis() - voiceStartedAtMs);
+        boolean failedImmediately = !voiceSpeechStarted && elapsed < 2500L;
+
+        if (error == SpeechRecognizer.ERROR_CLIENT ||
+            error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY ||
+            error == SpeechRecognizer.ERROR_SERVER) {
+            return true;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (error == SpeechRecognizer.ERROR_SERVER_DISCONNECTED ||
+                error == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED ||
+                error == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE) {
+                return true;
+            }
+        }
+
+        return failedImmediately;
+    }
+
+    private void launchSystemVoiceFallback(long sessionId) {
+        runOnUiThread(() -> {
+            if (sessionId != voiceSessionId) return;
+
+            if (voiceFallbackTried) {
+                callJs(
+                    "window.onVoiceError && window.onVoiceError(" +
+                    JSONObject.quote(
+                        "Pengenalan suara Android belum siap. Pastikan layanan input suara Google/Samsung aktif, lalu coba lagi."
+                    ) +
+                    ")"
+                );
+                return;
             }
 
+            voiceFallbackTried = true;
+            callJs("window.onVoiceFallback && window.onVoiceFallback()");
+
             try {
-                startActivityForResult(buildVoiceIntent(), REQ_VOICE);
+                Intent fallback = buildVoiceIntent();
+                startActivityForResult(fallback, REQ_VOICE);
             } catch (Exception fallbackError) {
                 callJs(
                     "window.onVoiceError && window.onVoiceError(" +
                     JSONObject.quote(
-                        "Layanan pengenalan suara Android belum aktif. Pastikan izin mikrofon diberikan dan layanan Pengetikan Suara Google/Samsung aktif."
+                        "Layanan pengenalan suara Android belum aktif. Aktifkan Input Suara Google/Samsung di pengaturan keyboard, lalu coba lagi."
                     ) +
                     ")"
                 );
             }
         });
+    }
+
+    private void destroySpecificRecognizer(SpeechRecognizer recognizer) {
+        if (recognizer == null) return;
+
+        try { recognizer.destroy(); } catch (Exception ignored) {}
+
+        if (speechRecognizer == recognizer) {
+            speechRecognizer = null;
+        }
+
+        voiceListening = false;
+    }
+
+    private void cancelCurrentVoiceSession() {
+        voiceSessionId++;
+
+        SpeechRecognizer recognizer = speechRecognizer;
+        speechRecognizer = null;
+        voiceListening = false;
+        voiceSpeechStarted = false;
+
+        if (recognizer != null) {
+            try { recognizer.cancel(); } catch (Exception ignored) {}
+            try { recognizer.destroy(); } catch (Exception ignored) {}
+        }
     }
 
     private String voiceErrorMessage(int error) {
@@ -485,21 +600,12 @@ public class MainActivity extends Activity {
     }
 
     private void destroySpeechRecognizer() {
-        if (speechRecognizer != null) {
-            try { speechRecognizer.destroy(); } catch (Exception ignored) {}
-            speechRecognizer = null;
-        }
-        voiceListening = false;
+        cancelCurrentVoiceSession();
     }
 
     private void stopVoiceRecognizer(boolean silent) {
-        suppressNextVoiceError = silent;
-        if (speechRecognizer != null) {
-            try {
-                if (voiceListening) speechRecognizer.cancel();
-            } catch (Exception ignored) {}
-            destroySpeechRecognizer();
-        }
+        cancelCurrentVoiceSession();
+    }
     }
 
     @Override
@@ -590,6 +696,11 @@ public class MainActivity extends Activity {
 
         currentReceiptUri = uri;
 
+        // OCR and preview must not block each other. OCR starts immediately from
+        // the original-resolution URI, while a small thumbnail is prepared in parallel.
+        callJs("window.setReceiptScanningV84 && window.setReceiptScanningV84(true,'Membaca total, tanggal, dan barang...')");
+        new Thread(() -> scanReceiptUri(uri), "uangku-receipt-ocr").start();
+
         new Thread(() -> {
             try {
                 String preview = buildReceiptPreviewDataUrl(uri);
@@ -602,9 +713,7 @@ public class MainActivity extends Activity {
                     );
                 }
             } catch (Exception ignored) {}
-
-            scanReceiptUri(uri);
-        }).start();
+        }, "uangku-receipt-preview").start();
     }
 
     private void scanReceiptUri(Uri uri) {
@@ -654,7 +763,7 @@ public class MainActivity extends Activity {
 
         int maxSide = Math.max(bounds.outWidth, bounds.outHeight);
         int sample = 1;
-        while (maxSide / sample > 1600) sample *= 2;
+        while (maxSide / sample > 900) sample *= 2;
 
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = Math.max(1, sample);
@@ -715,7 +824,7 @@ public class MainActivity extends Activity {
         }
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        oriented.compress(Bitmap.CompressFormat.JPEG, 82, out);
+        oriented.compress(Bitmap.CompressFormat.JPEG, 68, out);
         if (!oriented.isRecycled()) oriented.recycle();
 
         return "data:image/jpeg;base64," +
@@ -747,10 +856,12 @@ public class MainActivity extends Activity {
                         ")"
                     );
                 }
-            } else if (resultCode != RESULT_CANCELED) {
+            } else if (resultCode == RESULT_CANCELED) {
+                callJs("window.onVoiceCancelled && window.onVoiceCancelled()");
+            } else {
                 callJs(
                     "window.onVoiceError && window.onVoiceError(" +
-                    JSONObject.quote("Pengenalan suara belum berhasil. Coba lagi.") +
+                    JSONObject.quote("Pengenalan suara Android belum berhasil. Coba lagi atau periksa layanan input suara di pengaturan HP.") +
                     ")"
                 );
             }

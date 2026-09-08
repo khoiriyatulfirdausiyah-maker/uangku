@@ -10,7 +10,7 @@ if(dup.length)throw new Error('Duplicate function declarations: '+JSON.stringify
 if(/bindPageV\w*Base/.test(src))throw new Error('Legacy bindPage override chain still exists');
 if(/openGoalModalV68Base/.test(src))throw new Error('Legacy openGoalModal self-alias still exists');
 if(/^\/\*\s*=====\s*UANGKU\s+V[0-7]/mi.test(src))throw new Error('Historical patch header remains');
-if(!src.includes('UangKu v8.5 Native Voice Fix + Receipt Scanner + Performance Hardening + Theme + Daily Use Hardening'))throw new Error('v8.4 runtime header missing');
+if(!src.includes('UangKu v8.6 Receipt Accuracy + Performance + Native Voice + Theme + Daily Use Hardening'))throw new Error('v8.4 runtime header missing');
 if(src.includes("new Date().toISOString().slice(0,10)"))throw new Error('UTC date helper regression detected');
 const bindStart=src.indexOf('function bindPage(){');
 const bindEnd=src.indexOf('\n\nfunction accountName',bindStart);

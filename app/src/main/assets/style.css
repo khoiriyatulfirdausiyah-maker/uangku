@@ -3156,3 +3156,45 @@ html[data-theme="dark"] .receipt-raw-v84{
 /* ===== UANGKU V8.5 NATIVE VOICE ===== */
 .voice-partial-v85{min-height:36px;margin:14px auto 0;max-width:360px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:10px;line-height:1.4;padding:8px 12px;border-radius:14px;background:var(--surface2);border:1px solid var(--line)}
 html[data-theme="dark"] .voice-partial-v85{background:#18222E;border-color:#2B3947}
+
+
+/* ===== UANGKU V8.6 RECEIPT ACCURACY + PERFORMANCE ===== */
+.receipt-box-v86{padding:12px}
+.receipt-box-v86 .receipt-stage{min-height:220px;contain:layout paint}
+.receipt-preview-v86{max-height:300px}
+.receipt-action-grid-v86{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.receipt-note-field-v86{grid-column:1/-1}
+.receipt-source-v86{margin:-2px 0 10px;color:var(--muted);font-size:7.5px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.receipt-source-v86 b{color:var(--text);font-weight:800}
+.receipt-scan-overlay-v84{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:rgba(20,32,27,.78)}
+.receipt-result-v86{content-visibility:auto;contain-intrinsic-size:auto 260px}
+
+/* Render long pages lazily below the fold on Android WebView. */
+.content > .section,
+.content > .card{
+  content-visibility:auto;
+  contain-intrinsic-size:auto 220px;
+}
+
+/* Lighter shadows reduce repaint cost on older/mid-range Android devices. */
+:root{--shadow:0 3px 12px rgba(48,83,48,.055)}
+html[data-theme="dark"]{--shadow:0 4px 14px rgba(0,0,0,.18)}
+
+@media(max-width:390px){
+ .receipt-action-grid-v86{grid-template-columns:1fr}
+ .receipt-box-v86 .receipt-stage{min-height:190px}
+}
+
+
+/* ===== UANGKU V8.7 VOICE RECOVERY ===== */
+.voice-actions-v87{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:12px;
+  min-height:72px;
+}
+.voice-retry-v87{
+  width:auto!important;
+  min-width:124px;
+}

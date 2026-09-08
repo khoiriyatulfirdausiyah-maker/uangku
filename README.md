@@ -1,4 +1,4 @@
-# UangKu v8.5 — Native Voice Fix
+# UangKu v8.7 — Voice Recovery
 
 UangKu adalah aplikasi keuangan Android mobile-first berbasis WebView lokal.
 
@@ -20,6 +20,36 @@ Versi 8.5 memperbaiki alur Foto Struk: tombol kamera membuka kamera Android seca
 - Laporan dan insight
 - Kategori kustom
 - Export / import JSON dengan versioned backup schema
+
+## Perubahan v8.7
+
+- Memperbaiki kasus halaman voice muncul sebentar lalu langsung tertutup.
+- Callback SpeechRecognizer lama tidak boleh lagi menghentikan sesi voice baru.
+- Jika recognizer langsung gagal, UangKu otomatis mencoba pengenal suara Android sistem.
+- Error voice tetap berada di halaman Voice dan menampilkan tombol **Coba lagi**.
+- Membatalkan voice mengembalikan pengguna ke Asisten tanpa menambah bubble error.
+- `versionCode = 87`, `versionName = 8.7.0`.
+
+## Perubahan v8.6
+
+### Foto Struk lebih akurat
+- Nominal transaksi diprioritaskan dari **TOTAL BELANJA / GRAND TOTAL / TOTAL BAYAR / TOTAL PEMBAYARAN / TOTAL**.
+- Tunai/Cash, kembalian, QRIS, kartu, diskon, pajak, dan nomor referensi tidak dianggap sebagai total belanja.
+- Tanggal struk membaca format `08/09/2026`, `08/09/26`, `2026-09-08`, hingga `8 September 2026`.
+- Nama barang pada struk diekstrak menjadi **Catatan / Nama Belanjaan** dan otomatis dimasukkan ke catatan transaksi.
+- Hasil scan menampilkan sumber nominal supaya lebih mudah dicek.
+
+### Foto Struk lebih ringan
+- OCR foto asli dan pembuatan thumbnail preview berjalan paralel.
+- OCR tidak lagi menunggu proses kompres preview selesai.
+- Thumbnail preview diturunkan ke sekitar 900px / JPEG 68 karena hanya untuk tampilan; OCR tetap memakai URI foto asli.
+- Data URI foto tidak lagi ditempel langsung ke HTML saat render halaman.
+- Blur overlay scanner dihapus.
+
+### Respons aplikasi
+- Menambahkan lazy rendering (`content-visibility`) untuk kartu/section di bawah layar.
+- Shadow kartu dibuat lebih ringan untuk mengurangi repaint di Android WebView.
+- `versionCode = 86`, `versionName = 8.6.0`.
 
 ## Perubahan v8.5
 
@@ -134,7 +164,7 @@ Import lama tetap didukung. Backup dari versi yang lebih baru akan ditolak agar 
 
 GitHub Actions selalu membuat debug APK untuk pengujian. Jika 4 signing secret telah dipasang, workflow juga menghasilkan artifact:
 
-`UangKu-v8.5-SIGNED-release-apk`
+`UangKu-v8.7-SIGNED-release-apk`
 
 Gunakan release APK untuk instalasi harian dan update selanjutnya. Lihat **SIGNING_SETUP.md**.
 
