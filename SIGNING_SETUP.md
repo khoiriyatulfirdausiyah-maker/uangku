@@ -1,6 +1,6 @@
 # UangKu — Setup APK Update yang Aman
 
-UangKu v8.2 sudah dikonfigurasi untuk menghasilkan **signed release APK** dengan signing key yang sama pada setiap build.
+UangKu v8.5 sudah dikonfigurasi untuk menghasilkan **signed release APK** dengan signing key yang sama pada setiap build.
 
 > Penting: private key/keystore tidak disertakan di project atau ZIP. Simpan sendiri. Jika key hilang, APK dengan package `com.uangku.app` tidak bisa di-update menggunakan key baru.
 
@@ -49,7 +49,7 @@ Lakukan **sekali saja** saat pindah ke jalur release:
 1. Dari UangKu lama → **Pengaturan → Export JSON**.
 2. Pastikan file backup tersimpan.
 3. Uninstall APK debug lama.
-4. Install artifact `UangKu-v8.2-SIGNED-release-apk`.
+4. Install artifact `UangKu-v8.5-SIGNED-release-apk`.
 5. Import kembali backup JSON.
 6. Mulai setelah itu, versi release berikutnya dapat dipasang sebagai update selama signing key tetap sama dan `versionCode` naik.
 
@@ -58,7 +58,7 @@ Lakukan **sekali saja** saat pindah ke jalur release:
 Buka **Actions → Build Android APK → Run workflow**.
 
 Artifact:
-- `UangKu-v8.2-TEST-debug-apk` = hanya untuk tes.
-- `UangKu-v8.2-SIGNED-release-apk` = **pakai ini untuk instalasi harian dan update berikutnya**.
+- `UangKu-v8.5-TEST-debug-apk` = hanya untuk tes.
+- `UangKu-v8.5-SIGNED-release-apk` = **pakai ini untuk instalasi harian dan update berikutnya**.
 
 Selama package name tetap `com.uangku.app`, signing key tetap sama, dan `versionCode` selalu naik, APK baru dapat dipasang sebagai update di atas versi release sebelumnya.

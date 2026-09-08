@@ -1,10 +1,10 @@
-/* UangKu v8.2 Theme + Daily Use Hardening
+/* UangKu v8.5 Native Voice Fix + Receipt Scanner + Performance Hardening + Theme + Daily Use Hardening
    Stable runtime with local-device dates, versioned backups, recurring flexible expenses,
    hardened Android integration, and consolidated event bindings. */
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const fmt=n=>'Rp '+Math.round(Number(n||0)).toLocaleString('id-ID');
-const APP_VERSION='8.2.0';
+const APP_VERSION='8.5.0';
 const BACKUP_SCHEMA_VERSION=81;
 function localDateISO(date=new Date()){
  const d=date instanceof Date?date:new Date(date);
@@ -79,8 +79,37 @@ function loadState(){
  }
 }
 
+let runtimeRevisionV83=0;
+let derivedCacheV83={revision:-1,txLength:-1,accountBalances:null,monthRows:new Map(),monthTotals:new Map()};
+
+function invalidateDerivedCacheV83(){
+ runtimeRevisionV83++;
+ derivedCacheV83={revision:-1,txLength:-1,accountBalances:null,monthRows:new Map(),monthTotals:new Map()};
+}
+
+function ensureDerivedCacheV83(){
+ const txLength=Array.isArray(state?.transactions)?state.transactions.length:0;
+ if(derivedCacheV83.revision!==runtimeRevisionV83||derivedCacheV83.txLength!==txLength){
+   derivedCacheV83.revision=runtimeRevisionV83;
+   derivedCacheV83.txLength=txLength;
+   derivedCacheV83.accountBalances=null;
+   derivedCacheV83.monthRows=new Map();
+   derivedCacheV83.monthTotals=new Map();
+ }
+ return derivedCacheV83;
+}
+
+function monthTransactionsV83(k=monthKey()){
+ const cache=ensureDerivedCacheV83();
+ if(cache.monthRows.has(k))return cache.monthRows.get(k);
+ const rows=(state.transactions||[]).filter(t=>t&&monthKey(t.date)===k);
+ cache.monthRows.set(k,rows);
+ return rows;
+}
+
 function save(){
  state.schemaVersion=BACKUP_SCHEMA_VERSION;
+ invalidateDerivedCacheV83();
  localStorage.setItem('uangku_data_v3',JSON.stringify(state));
 }
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -141,8 +170,8 @@ function navigate(page,opts={}){
  currentPage=next;
  setHeader(currentPage);
  $$('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===currentPage));
+ window.scrollTo({top:0,behavior:'auto'});
  render();
- window.scrollTo({top:0,behavior:opts.instant?'auto':'smooth'});
 }
 
 function goBack(){
@@ -320,18 +349,36 @@ function prettyDate(d){
 }
 
 function renderReceipt(){
- return `<div class="receipt-box">
+ const hasPhoto=!!receiptDataUrl;
+ return `<div class="receipt-box receipt-box-v84">
    <div id="receiptStage" class="receipt-stage">
-     <div id="receiptMock" style="color:white;text-align:center"><div style="font-size:42px">▧</div><div style="font-size:12px;font-weight:800;margin-top:8px">Belum ada foto struk</div><div style="font-size:9px;opacity:.8;margin-top:4px">Ambil foto atau pilih dari galeri</div></div>
-     <img id="receiptPreview" class="receipt-preview">
+     <div id="receiptMock" style="${hasPhoto?'display:none;':''}color:white;text-align:center">
+       <div style="font-size:42px">▧</div>
+       <div style="font-size:12px;font-weight:800;margin-top:8px">Belum ada foto struk</div>
+       <div style="font-size:9px;opacity:.8;margin-top:4px">Ambil foto langsung dari kamera atau pilih galeri</div>
+     </div>
+     <img id="receiptPreview" class="receipt-preview" ${hasPhoto?`src="${receiptDataUrl}" style="display:block"`:''}>
+     <div id="receiptScanOverlayV84" class="receipt-scan-overlay-v84 ${receiptScanningV84?'':'hidden'}">
+       <div class="receipt-spinner-v84"></div>
+       <b>Membaca struk...</b>
+       <small>Pastikan foto tidak blur dan seluruh total terlihat.</small>
+     </div>
    </div>
+
    <input id="receiptFile" type="file" accept="image/*" capture="environment" hidden>
    <input id="receiptGallery" type="file" accept="image/*" hidden>
-   <p class="list-sub" style="font-size:10px;margin:12px 0">Ambil foto struk untuk mengisi transaksi secara otomatis.</p>
-   <button class="btn block" id="cameraBtn">📷 Ambil Foto</button>
+
+   <div class="receipt-tip-v84">
+     <b>Supaya hasil lebih akurat</b>
+     <span>Foto lurus dari atas, cahaya cukup, struk memenuhi layar, dan jangan memotong bagian TOTAL.</span>
+   </div>
+
+   <button class="btn block" id="cameraBtn">📷 Ambil Foto dari Kamera</button>
    <button class="btn light block" id="galleryBtn" style="margin-top:8px">▧ Pilih dari Galeri</button>
-   <button class="btn secondary block hidden" id="scanReceiptBtn" style="margin-top:8px">Scan & Isi Otomatis</button>
-   <div id="ocrStatus" class="list-sub" style="margin-top:8px"></div>
+   <button class="btn secondary block ${hasPhoto?'':'hidden'}" id="scanReceiptBtn" style="margin-top:8px">Scan Ulang</button>
+
+   <div id="ocrStatus" class="receipt-status-v84">${receiptStatusV84||''}</div>
+   <div id="receiptResultWrapV84">${renderReceiptResultV84()}</div>
  </div>`;
 }
 
@@ -486,12 +533,384 @@ function openCategoryModal(){
 function parseAmount(text){const s=text.toLowerCase().replace(/\./g,'').replace(/,/g,'.');let m=s.match(/(\d+(?:\.\d+)?)\s*(juta|jt)\b/);if(m)return Math.round(parseFloat(m[1])*1e6);m=s.match(/(\d+(?:\.\d+)?)\s*(ribu|rb|k)\b/);if(m)return Math.round(parseFloat(m[1])*1e3);m=s.match(/(?:rp\s*)?(\d{4,})/);return m?Number(m[1]):0}
 function inferCategory(text,type){const t=text.toLowerCase(),rules=[['Makan & Minum',['makan','kopi','minum','bakso','mie','nasi','dimsum']],['Transportasi',['bensin','pertamax','parkir','ojek','transport']],['Groceries',['belanja','groceries','sayur','sembako']],['Listrik',['listrik','token']],['Tagihan',['wifi','internet','pdam','tagihan']],['Pakan Hewan',['kucing','pakan']],['Gaji',['gaji']],['Penjualan',['jualan','jual']]];for(const [c,k] of rules)if(k.some(x=>t.includes(x)))return c;return'Lainnya'}
 let receiptDataUrl='';
-async function handleReceiptFile(e){const f=e.target.files?.[0];if(!f)return;receiptDataUrl=await compressImage(f);$('#receiptMock').style.display='none';const p=$('#receiptPreview');p.src=receiptDataUrl;p.style.display='block';$('#scanReceiptBtn').classList.remove('hidden');$('#ocrStatus').textContent='Foto siap discan.'}
-function compressImage(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const max=1280,s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.8))};im.onerror=rej;im.src=r.result};r.onerror=rej;r.readAsDataURL(file)})}
-function scanReceipt(){if(!receiptDataUrl)return;$('#ocrStatus').textContent='Membaca struk...';try{window.Native?.scanReceipt?Native.scanReceipt(receiptDataUrl):toast('OCR aktif saat APK dijalankan')}catch(e){toast('OCR gagal')}}
-window.onReceiptOCR=text=>{const p=parseReceiptText(text);navigate('addTransaction');setTimeout(()=>{$('#txType').value='expense';setTxType('expense');$('#txAmount').value=p.amount||'';$('[name=note]').value=p.merchant||'Belanja dari struk'},80)}
-window.onReceiptOCRError=msg=>toast(msg)
-function parseReceiptText(text){const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),merchant=lines.find(x=>/[A-Za-z]/.test(x)&&x.length>2)?.slice(0,50)||'Belanja dari struk';let nums=[...text.replace(/\./g,'').matchAll(/(?:rp\s*)?(\d{4,})/ig)].map(m=>Number(m[1])).filter(n=>n<1e9);return{merchant,amount:nums.length?Math.max(...nums):0}}
+let receiptOcrTextV84='';
+let receiptParsedV84=null;
+let receiptScanningV84=false;
+let receiptStatusV84='';
+
+function receiptMoneyV84(value){
+ return fmt(Math.max(0,Number(value)||0));
+}
+
+function normalizeReceiptLineV84(line){
+ return String(line||'').replace(/\s+/g,' ').replace(/[|]/g,' ').trim();
+}
+
+function parseReceiptMoneyTokenV84(raw){
+ let s=String(raw||'').toLowerCase().replace(/rp\.?/g,'').replace(/\s+/g,'').replace(/[^\d.,]/g,'');
+ if(!s)return 0;
+
+ if(/[.,]\d{2}$/.test(s)){
+   const last=Math.max(s.lastIndexOf('.'),s.lastIndexOf(','));
+   const before=s.slice(0,last).replace(/[.,]/g,'');
+   const decimals=s.slice(last+1);
+   if(before&&decimals.length===2){
+     const n=Number(before);
+     return Number.isFinite(n)?n:0;
+   }
+ }
+
+ if(/^\d{1,3}([.,]\d{3})+$/.test(s)){
+   const n=Number(s.replace(/[.,]/g,''));
+   return Number.isFinite(n)?n:0;
+ }
+
+ const compact=s.replace(/[.,]/g,'');
+ const n=Number(compact);
+ return Number.isFinite(n)?n:0;
+}
+
+function extractReceiptAmountsV84(line){
+ const src=String(line||'');
+ const tokens=src.match(/(?:rp\.?\s*)?\d{1,3}(?:[.\s,]\d{3})+(?:[.,]\d{2})?|(?:rp\.?\s*)?\d{4,9}(?:[.,]\d{2})?/ig)||[];
+ return tokens
+   .map(raw=>({raw,amount:parseReceiptMoneyTokenV84(raw)}))
+   .filter(x=>x.amount>=100&&x.amount<1000000000&&!(x.amount>=1900&&x.amount<=2100));
+}
+
+function receiptTotalLineScoreV84(line,index,totalLines){
+ const l=String(line||'').toLowerCase();
+ let score=0;
+
+ if(/grand\s*total|total\s*(bayar|pembayaran|belanja|harga)|jumlah\s*(bayar|pembayaran)|amount\s*due|net\s*total/.test(l))score+=120;
+ else if(/\btotal\b/.test(l)&&!/\bsubtotal\b/.test(l))score+=90;
+ else if(/\bjumlah\b|\bamount\b/.test(l))score+=65;
+ else if(/\bsubtotal\b/.test(l))score+=35;
+
+ if(/kembali|kembalian|change|cash|tunai|bayar\s*tunai|uang\s*diterima|received|tender/.test(l))score-=140;
+ if(/diskon|discount|hemat|saving|promo|voucher/.test(l))score-=100;
+ if(/ppn|pajak|tax|service|ongkir|delivery\s*fee/.test(l))score-=60;
+ if(/invoice|faktur|order|trx|transaksi|ref|telp|phone|member|npwp|no\.?\s*\d/.test(l))score-=80;
+
+ if(totalLines>1)score+=Math.round((index/(totalLines-1))*18);
+ return score;
+}
+
+function findReceiptTotalV84(lines){
+ const candidates=[];
+
+ lines.forEach((line,i)=>{
+   const amounts=extractReceiptAmountsV84(line);
+   const lineScore=receiptTotalLineScoreV84(line,i,lines.length);
+
+   amounts.forEach((a,j)=>{
+     candidates.push({amount:a.amount,raw:a.raw,line,index:i,score:lineScore+j*2});
+   });
+
+   if(lineScore>=80&&!amounts.length){
+     for(let step=1;step<=2;step++){
+       const next=lines[i+step];
+       if(!next)break;
+       const nextAmounts=extractReceiptAmountsV84(next);
+       if(nextAmounts.length){
+         const a=nextAmounts[nextAmounts.length-1];
+         candidates.push({
+           amount:a.amount,raw:a.raw,line:`${line} ${next}`,index:i+step,score:lineScore+35-step
+         });
+         break;
+       }
+     }
+   }
+ });
+
+ const strong=candidates.filter(c=>c.score>=70)
+   .sort((a,b)=>b.score-a.score||b.index-a.index||b.amount-a.amount);
+ if(strong.length)return strong[0].amount;
+
+ const fallback=candidates.filter(c=>c.score>-70)
+   .filter(c=>c.index>=Math.floor(lines.length*.35))
+   .sort((a,b)=>b.index-a.index||b.amount-a.amount);
+
+ return fallback.length?fallback[0].amount:0;
+}
+
+function findReceiptMerchantV84(lines){
+ const banned=/struk|receipt|invoice|faktur|tanggal|date|waktu|time|kasir|cashier|alamat|address|telp|phone|whatsapp|member|customer|pelanggan|npwp|order|transaksi|transaction|qty|subtotal|total|pajak|ppn|www\.|http|terima kasih|thank you/i;
+ const top=lines.slice(0,12);
+
+ const scored=top.map((line,i)=>{
+   const letters=(line.match(/[A-Za-z]/g)||[]).length;
+   const digits=(line.match(/\d/g)||[]).length;
+   let score=letters*3-digits*2-i*2;
+   if(line.length>=3&&line.length<=45)score+=15;
+   if(/^[A-Z0-9 .&'_-]{3,}$/.test(line)&&letters>=3)score+=12;
+   if(/^(pt|cv)\b/i.test(line))score+=4;
+   if(banned.test(line))score-=100;
+   return{line,score,letters};
+ }).filter(x=>x.letters>=3);
+
+ scored.sort((a,b)=>b.score-a.score);
+ return scored[0]?.line?.slice(0,50)||'Belanja dari struk';
+}
+
+function findReceiptDateV84(text){
+ const s=String(text||'');
+ let m=s.match(/\b(\d{2})[\/.-](\d{2})[\/.-](20\d{2})\b/);
+ if(m){
+   const d=Number(m[1]),mo=Number(m[2]),y=Number(m[3]);
+   if(d>=1&&d<=31&&mo>=1&&mo<=12)return`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+ }
+
+ m=s.match(/\b(20\d{2})[\/.-](\d{2})[\/.-](\d{2})\b/);
+ if(m){
+   const y=Number(m[1]),mo=Number(m[2]),d=Number(m[3]);
+   if(d>=1&&d<=31&&mo>=1&&mo<=12)return`${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+ }
+ return today();
+}
+
+function parseReceiptTextV84(text){
+ const lines=String(text||'').split(/\r?\n/).map(normalizeReceiptLineV84).filter(Boolean);
+ const merchant=findReceiptMerchantV84(lines);
+ const amount=findReceiptTotalV84(lines);
+ const date=findReceiptDateV84(text);
+ let category=inferCategory(`${merchant}\n${text}`,'expense');
+
+ if(!(state.categories||[]).includes(category)){
+   category=(state.categories||[]).includes('Lainnya')?'Lainnya':((state.categories||[])[0]||'Lainnya');
+ }
+
+ return{merchant,amount,date,category,rawText:String(text||''),lines};
+}
+
+function parseReceiptText(text){return parseReceiptTextV84(text)}
+
+function renderReceiptResultV84(){
+ if(!receiptParsedV84)return'';
+
+ const p=receiptParsedV84;
+ const categoryOptions=(state.categories||[]).map(c=>
+   `<option value="${esc(c)}" ${c===p.category?'selected':''}>${esc(c)}</option>`
+ ).join('');
+
+ return`<div class="receipt-result-v84">
+   <div class="receipt-result-head-v84">
+     <div><b>Hasil Scan</b><small>Cek dulu sebelum dijadikan transaksi</small></div>
+     <span>${p.amount?'Terdeteksi':'Perlu dicek'}</span>
+   </div>
+
+   <div class="receipt-review-grid-v84">
+     <label><span>Merchant / Toko</span><input id="receiptMerchantV84" value="${esc(p.merchant||'')}"></label>
+     <label><span>Total Belanja</span><input id="receiptAmountV84" inputmode="numeric" value="${p.amount||''}" placeholder="Contoh: 50000"></label>
+     <label><span>Tanggal</span><input id="receiptDateV84" type="date" value="${esc(p.date||today())}"></label>
+     <label><span>Kategori</span><select id="receiptCategoryV84">${categoryOptions}</select></label>
+   </div>
+
+   <button class="btn block" id="useReceiptResultV84">Gunakan Hasil Scan</button>
+   <button class="receipt-raw-toggle-v84" type="button" id="toggleReceiptRawV84">Lihat teks hasil OCR</button>
+   <pre id="receiptRawV84" class="receipt-raw-v84 hidden">${esc(receiptOcrTextV84)}</pre>
+ </div>`;
+}
+
+function refreshReceiptResultV84(){
+ const wrap=$('#receiptResultWrapV84');
+ if(wrap)wrap.innerHTML=renderReceiptResultV84();
+ bindReceiptResultV84();
+}
+
+function bindReceiptResultV84(){
+ $('#useReceiptResultV84')&&($('#useReceiptResultV84').onclick=useReceiptResultV84);
+ $('#toggleReceiptRawV84')&&($('#toggleReceiptRawV84').onclick=()=>$('#receiptRawV84')?.classList.toggle('hidden'));
+}
+
+function useReceiptResultV84(){
+ if(!receiptParsedV84)return;
+
+ const amount=Math.max(0,Number(String($('#receiptAmountV84')?.value||'').replace(/[^\d]/g,''))||0);
+ const merchant=String($('#receiptMerchantV84')?.value||receiptParsedV84.merchant||'Belanja dari struk').trim();
+ const date=String($('#receiptDateV84')?.value||receiptParsedV84.date||today());
+ const category=String($('#receiptCategoryV84')?.value||receiptParsedV84.category||'Lainnya');
+
+ if(!amount){
+   toast('Total belum terbaca. Isi total struk dulu.');
+   $('#receiptAmountV84')?.focus();
+   return;
+ }
+
+ navigate('addTransaction',{instant:true});
+ requestAnimationFrame(()=>{
+   setTxType('expense');
+
+   const amountEl=$('#txAmount');
+   if(amountEl)amountEl.value=amount;
+
+   const categoryEl=$('#txCategory');
+   if(categoryEl){
+     const has=[...categoryEl.options].some(o=>o.value===category);
+     if(has)categoryEl.value=category;
+   }
+
+   const dateEl=$('[name=date]');
+   if(dateEl)dateEl.value=date;
+
+   const noteEl=$('[name=note]');
+   if(noteEl)noteEl.value=merchant||'Belanja dari struk';
+
+   syncDebtPanelsV62();
+   syncSalesPaymentPanelV73();
+   toast('Hasil struk dimasukkan. Cek lalu simpan transaksi.');
+ });
+}
+
+function setReceiptScanningV84(active,message=''){
+ receiptScanningV84=!!active;
+ if(message)receiptStatusV84=message;
+
+ const overlay=$('#receiptScanOverlayV84');
+ if(overlay)overlay.classList.toggle('hidden',!receiptScanningV84);
+
+ const status=$('#ocrStatus');
+ if(status)status.textContent=receiptStatusV84||'';
+
+ const btn=$('#scanReceiptBtn');
+ if(btn)btn.disabled=receiptScanningV84;
+}
+
+function showReceiptPreviewV84(dataUrl){
+ receiptDataUrl=String(dataUrl||'');
+ const mock=$('#receiptMock');
+ if(mock)mock.style.display=receiptDataUrl?'none':'';
+
+ const p=$('#receiptPreview');
+ if(p&&receiptDataUrl){
+   p.src=receiptDataUrl;
+   p.style.display='block';
+ }
+
+ const scan=$('#scanReceiptBtn');
+ if(scan&&receiptDataUrl)scan.classList.remove('hidden');
+}
+
+async function handleReceiptFile(e){
+ const f=e.target.files?.[0];
+ if(!f)return;
+
+ receiptParsedV84=null;
+ receiptOcrTextV84='';
+ setReceiptScanningV84(true,'Menyiapkan foto...');
+
+ try{
+   receiptDataUrl=await compressImage(f);
+   showReceiptPreviewV84(receiptDataUrl);
+   setReceiptScanningV84(false,'Foto siap. Menjalankan OCR...');
+   scanReceipt();
+ }catch(err){
+   setReceiptScanningV84(false,'Foto tidak dapat dibaca.');
+   toast('Foto tidak dapat dibaca.');
+ }
+}
+
+function compressImage(file){
+ return new Promise((res,rej)=>{
+   const r=new FileReader();
+   r.onload=()=>{
+     const im=new Image();
+     im.onload=()=>{
+       const max=2200;
+       const s=Math.min(1,max/Math.max(im.width,im.height));
+       const c=document.createElement('canvas');
+       c.width=Math.max(1,Math.round(im.width*s));
+       c.height=Math.max(1,Math.round(im.height*s));
+       c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+       res(c.toDataURL('image/jpeg',.9));
+     };
+     im.onerror=rej;
+     im.src=r.result;
+   };
+   r.onerror=rej;
+   r.readAsDataURL(file);
+ });
+}
+
+function openReceiptCameraV84(){
+ receiptParsedV84=null;
+ receiptOcrTextV84='';
+ refreshReceiptResultV84();
+ setReceiptScanningV84(false,'Membuka kamera...');
+
+ try{
+   if(window.Native?.openReceiptCamera){
+     Native.openReceiptCamera();
+     return;
+   }
+ }catch(e){}
+
+ $('#receiptFile')?.click();
+}
+
+function openReceiptGalleryV84(){
+ receiptParsedV84=null;
+ receiptOcrTextV84='';
+ refreshReceiptResultV84();
+ setReceiptScanningV84(false,'Membuka galeri...');
+
+ try{
+   if(window.Native?.openReceiptGallery){
+     Native.openReceiptGallery();
+     return;
+   }
+ }catch(e){}
+
+ $('#receiptGallery')?.click();
+}
+
+function scanReceipt(){
+ if(receiptScanningV84)return;
+
+ receiptParsedV84=null;
+ receiptOcrTextV84='';
+ refreshReceiptResultV84();
+ setReceiptScanningV84(true,'Membaca struk...');
+
+ try{
+   if(window.Native?.scanLastReceipt){
+     Native.scanLastReceipt();
+     return;
+   }
+
+   if(window.Native?.scanReceipt&&receiptDataUrl){
+     Native.scanReceipt(receiptDataUrl);
+     return;
+   }
+
+   setReceiptScanningV84(false,'OCR aktif saat APK dijalankan.');
+   toast('OCR aktif saat APK dijalankan');
+ }catch(e){
+   setReceiptScanningV84(false,'OCR gagal dijalankan.');
+   toast('OCR gagal');
+ }
+}
+
+window.onReceiptImageReady=(dataUrl,source)=>{
+ showReceiptPreviewV84(dataUrl);
+ setReceiptScanningV84(true,source==='camera'?'Foto dari kamera diterima. Membaca struk...':'Foto dipilih. Membaca struk...');
+};
+
+window.onReceiptOCR=text=>{
+ receiptOcrTextV84=String(text||'');
+ receiptParsedV84=parseReceiptTextV84(receiptOcrTextV84);
+ setReceiptScanningV84(false,
+   receiptParsedV84.amount
+     ?`Total terdeteksi ${receiptMoneyV84(receiptParsedV84.amount)}. Cek hasil sebelum dipakai.`
+     :'Total belum terbaca dengan yakin. Cek dan isi manual bila perlu.'
+ );
+ refreshReceiptResultV84();
+};
+
+window.onReceiptOCRError=msg=>{
+ setReceiptScanningV84(false,String(msg||'OCR gagal membaca struk.'));
+ toast(String(msg||'OCR gagal membaca struk.'));
+};
 
 function createBackupPayloadV81(){
  return {
@@ -560,11 +979,11 @@ function exportJSON(){
  const blob=new Blob([json],{type:'application/json'});
  const a=document.createElement('a');
  a.href=URL.createObjectURL(blob);
- a.download=`uangku-backup-v8.1-${today()}.json`;
+ a.download=`uangku-backup-v8.4-${today()}.json`;
  a.click();
  URL.revokeObjectURL(a.href);
 }
-window.onExportDone=()=>toast('Backup versi 8.1 berhasil disimpan.');
+window.onExportDone=()=>toast('Backup berhasil disimpan.');
 window.onExportError=()=>toast('Backup gagal');
 
 function importJSON(e){
@@ -1106,265 +1525,120 @@ function requestDeleteBill(id){
 }
 
 function bindPage(){
- ensureCategoryGroupsV63();
-
  $$('[data-nav]').forEach(btn=>btn.onclick=()=>navigate(btn.dataset.nav));
-
- $('#toggleBalanceBtn')&&($('#toggleBalanceBtn').onclick=toggleBalanceVisibility);
- $('#toggleNetWorthDetail')&&($('#toggleNetWorthDetail').onclick=()=>{
-   netWorthExpanded=!netWorthExpanded;
-   localStorage.setItem('uangku_networth_expanded',netWorthExpanded?'1':'0');
-   render();
- });
- $('#includeAssetsToggle')&&($('#includeAssetsToggle').onchange=e=>{
-   includeInvestmentAssets=!!e.target.checked;
-   localStorage.setItem('uangku_include_investment_assets',includeInvestmentAssets?'1':'0');
-   render();
- });
 
  const bindPeriod=(id,get,set)=>{
    const input=$('#'+id);
-   if(input){
-     input.onchange=e=>{
-       if(/^\d{4}-\d{2}$/.test(e.target.value)){
-         set(e.target.value);
-         render();
-       }
-     };
-   }
-   $$(`[data-period-prev="${id}"]`).forEach(btn=>btn.onclick=()=>{
-     set(shiftMonth(get(),-1));
-     render();
-   });
-   $$(`[data-period-next="${id}"]`).forEach(btn=>btn.onclick=()=>{
-     set(shiftMonth(get(),1));
-     render();
-   });
+   if(input)input.onchange=e=>{
+     if(/^\d{4}-\d{2}$/.test(e.target.value)){set(e.target.value);render()}
+   };
+   $$(`[data-period-prev="${id}"]`).forEach(btn=>btn.onclick=()=>{set(shiftMonth(get(),-1));render()});
+   $$(`[data-period-next="${id}"]`).forEach(btn=>btn.onclick=()=>{set(shiftMonth(get(),1));render()});
  };
- bindPeriod('homeMonthInput',()=>homePeriod,v=>{
-   homePeriod=v;
-   localStorage.setItem('uangku_home_period',v);
- });
- bindPeriod('planMonthInput',()=>planPeriod,v=>{
-   planPeriod=v;
-   localStorage.setItem('uangku_plan_period',v);
- });
- bindPeriod('reportMonthInput',()=>reportPeriod,v=>{
-   reportPeriod=v;
-   localStorage.setItem('uangku_report_period',v);
- });
 
- $$('[data-tx-filter]').forEach(btn=>btn.onclick=()=>{
-   txFilter=btn.dataset.txFilter;
-   render();
- });
+ if(currentPage==='home'){
+   $('#toggleBalanceBtn')&&($('#toggleBalanceBtn').onclick=toggleBalanceVisibility);
+   $('#toggleNetWorthDetail')&&($('#toggleNetWorthDetail').onclick=()=>{netWorthExpanded=!netWorthExpanded;localStorage.setItem('uangku_networth_expanded',netWorthExpanded?'1':'0');render()});
+   $('#includeAssetsToggle')&&($('#includeAssetsToggle').onchange=e=>{includeInvestmentAssets=!!e.target.checked;localStorage.setItem('uangku_include_investment_assets',includeInvestmentAssets?'1':'0');render()});
+   bindPeriod('homeMonthInput',()=>homePeriod,v=>{homePeriod=v;localStorage.setItem('uangku_home_period',v)});
+   $$('[data-plan-link]').forEach(btn=>btn.onclick=()=>{planTab=btn.dataset.planLink==='goal'?'goal':'budget';if(planTab==='budget'){planPeriod=homePeriod;localStorage.setItem('uangku_plan_period',planPeriod)}navigate('plans')});
+   $('#toggleHomeSummaryV65')&&($('#toggleHomeSummaryV65').onclick=()=>{homeSummaryExpandedV65=!homeSummaryExpandedV65;localStorage.setItem('uangku_home_summary_v65',homeSummaryExpandedV65?'1':'0');render()});
+   $('#homeDebtSeeAllV70')&&($('#homeDebtSeeAllV70').onclick=()=>{debtTab='debts';navigate('debts')});
+   initFinancialCarouselV78();
+   $('#openAccountsV78')&&($('#openAccountsV78').onclick=()=>navigate('accounts'));
+   $$('[data-overview-breakdown]').forEach(btn=>btn.onclick=()=>openOverviewBreakdownV78(btn.dataset.overviewBreakdown));
 
- $('#typeIncome')&&($('#typeIncome').onclick=()=>setTxType('income'));
- $('#typeExpense')&&($('#typeExpense').onclick=()=>setTxType('expense'));
- $('#typeTransfer')&&($('#typeTransfer').onclick=()=>setTxType('transfer'));
+ }else if(currentPage==='transactions'){
+   $$('[data-tx-filter]').forEach(btn=>btn.onclick=()=>{txFilter=btn.dataset.txFilter;render()});
+   $$('[data-edit-tx]').forEach(btn=>btn.onclick=()=>openEditTransactionModal(btn.dataset.editTx));
+   $$('[data-delete-tx]').forEach(btn=>btn.onclick=()=>requestDeleteTransaction(btn.dataset.deleteTx));
 
- $('#txCategory')&&($('#txCategory').onchange=()=>{
-   syncDebtPanelsV62();
-   syncSalesPaymentPanelV73();
- });
- syncDebtPanelsV62();
- syncSalesPaymentPanelV73();
+ }else if(currentPage==='addTransaction'){
+   $('#typeIncome')&&($('#typeIncome').onclick=()=>setTxType('income'));
+   $('#typeExpense')&&($('#typeExpense').onclick=()=>setTxType('expense'));
+   $('#typeTransfer')&&($('#typeTransfer').onclick=()=>setTxType('transfer'));
+   $('#txCategory')&&($('#txCategory').onchange=()=>{syncDebtPanelsV62();syncSalesPaymentPanelV73()});
+   syncDebtPanelsV62();syncSalesPaymentPanelV73();
+   $('#txForm')&&($('#txForm').onsubmit=e=>{e.preventDefault();saveManualTransactionV62(e.target)});
+   $$('[data-add-amount]').forEach(btn=>btn.onclick=()=>{const input=$('#txAmount');if(input)input.value=Number(input.value||0)+Number(btn.dataset.addAmount||0)});
 
- if(currentPage==='addTransaction'&&$('#txForm')){
-   $('#txForm').onsubmit=e=>{
-     e.preventDefault();
-     saveManualTransactionV62(e.target);
-   };
- }
+ }else if(currentPage==='assistant'){
+   $('#sendChat')&&($('#sendChat').onclick=sendChat);
+   $('#chatInput')&&($('#chatInput').onkeydown=e=>{if(e.key==='Enter')sendChat()});
+   $('#voiceBtn')&&($('#voiceBtn').onclick=()=>navigate('voice'));
+   $$('.suggestion').forEach(btn=>btn.onclick=()=>{const input=$('#chatInput');if(input){input.value=btn.textContent;sendChat()}});
 
- $$('[data-add-amount]').forEach(btn=>btn.onclick=()=>{
-   const input=$('#txAmount');
-   if(input)input.value=Number(input.value||0)+Number(btn.dataset.addAmount||0);
- });
-
- $$('[data-edit-tx]').forEach(btn=>btn.onclick=()=>openEditTransactionModal(btn.dataset.editTx));
- $$('[data-delete-tx]').forEach(btn=>btn.onclick=()=>requestDeleteTransaction(btn.dataset.deleteTx));
-
- $('#sendChat')&&($('#sendChat').onclick=sendChat);
- $('#chatInput')&&($('#chatInput').onkeydown=e=>{
-   if(e.key==='Enter')sendChat();
- });
- $('#voiceBtn')&&($('#voiceBtn').onclick=()=>navigate('voice'));
- $$('.suggestion').forEach(btn=>btn.onclick=()=>{
-   const input=$('#chatInput');
-   if(input){
-     input.value=btn.textContent;
-     sendChat();
-   }
- });
- if(currentPage==='voice'){
-   startVoice();
-   $('#voiceStop')&&($('#voiceStop').onclick=()=>navigate('assistant'));
- }
-
- $('#cameraBtn')&&($('#cameraBtn').onclick=()=>$('#receiptFile')?.click());
- $('#galleryBtn')&&($('#galleryBtn').onclick=()=>$('#receiptGallery')?.click());
- $('#receiptFile')&&($('#receiptFile').onchange=handleReceiptFile);
- $('#receiptGallery')&&($('#receiptGallery').onchange=handleReceiptFile);
- $('#scanReceiptBtn')&&($('#scanReceiptBtn').onclick=scanReceipt);
-
- $('#addAccountBtn')&&($('#addAccountBtn').onclick=()=>openAccountModal());
- $$('[data-edit-account]').forEach(btn=>btn.onclick=()=>openAccountModal(btn.dataset.editAccount));
- $$('[data-delete-account]').forEach(btn=>btn.onclick=()=>requestDeleteAccount(btn.dataset.deleteAccount));
-
- $$('[data-plan-tab]').forEach(btn=>btn.onclick=()=>{
-   planTab=btn.dataset.planTab==='goal'?'goal':'budget';
-   render();
- });
- $$('[data-plan-link]').forEach(btn=>btn.onclick=()=>{
-   planTab=btn.dataset.planLink==='goal'?'goal':'budget';
-   if(planTab==='budget'){
-     planPeriod=homePeriod;
-     localStorage.setItem('uangku_plan_period',planPeriod);
-   }
-   navigate('plans');
- });
-
- $('#addBudgetBtn')&&($('#addBudgetBtn').onclick=()=>openBudgetModal());
- $$('[data-edit-budget]').forEach(btn=>btn.onclick=()=>openBudgetModal(btn.dataset.editBudget));
- $$('[data-delete-budget]').forEach(btn=>btn.onclick=()=>{
-   const budget=state.budgets.find(v=>v.id===btn.dataset.deleteBudget);
-   if(!budget)return;
-   openConfirm('Hapus Budget',`Hapus budget ${budget.category} untuk ${monthLabel(budget.month)}?`,'Hapus',()=>{
-     state.budgets=state.budgets.filter(v=>v.id!==budget.id);
-     save();
-     toast('Budget dihapus.');
-     render();
+ }else if(currentPage==='voice'){
+   startVoice();$('#voiceStop')&&($('#voiceStop').onclick=()=>{
+     try{ if(window.Native?.stopVoice) Native.stopVoice(); }catch(e){}
+     navigate('assistant');
    });
- });
- $$('[data-budget-detail]').forEach(card=>{
-   card.onclick=e=>{
-     if(e.target.closest('button'))return;
-     openBudgetCategoryDetailV75(card.dataset.budgetDetail);
-   };
-   card.onkeydown=e=>{
-     if(e.target.closest('button'))return;
-     if(e.key==='Enter'||e.key===' '){
-       e.preventDefault();
-       openBudgetCategoryDetailV75(card.dataset.budgetDetail);
-     }
-   };
- });
 
- $('#addGoalBtn')&&($('#addGoalBtn').onclick=()=>openGoalModal());
- $$('[data-edit-goal]').forEach(btn=>btn.onclick=()=>openGoalModal(btn.dataset.editGoal));
- $$('[data-add-goal]').forEach(btn=>btn.onclick=()=>openGoalAllocationModal(btn.dataset.addGoal));
- $$('[data-connect-goal]').forEach(btn=>btn.onclick=()=>openConnectLegacyGoalModal(btn.dataset.connectGoal));
- $$('[data-delete-goal]').forEach(btn=>btn.onclick=()=>{
-   const goal=state.goals.find(x=>x.id===btn.dataset.deleteGoal);
-   if(!goal)return;
-   openConfirm(
-     'Hapus Target',
-     `Hapus target ${goal.name}? Alokasi dana target akan dilepas kembali menjadi dana bebas, tetapi saldo akun tidak berubah.`,
-     'Hapus',
-     ()=>{
-       state.goals=state.goals.filter(x=>x.id!==goal.id);
-       save();
-       toast('Target dihapus. Dana kembali dianggap bebas.');
-       render();
-     }
-   );
- });
+ }else if(currentPage==='receipt'){
+   $('#cameraBtn')&&($('#cameraBtn').onclick=openReceiptCameraV84);
+   $('#galleryBtn')&&($('#galleryBtn').onclick=openReceiptGalleryV84);
+   $('#receiptFile')&&($('#receiptFile').onchange=handleReceiptFile);
+   $('#receiptGallery')&&($('#receiptGallery').onchange=handleReceiptFile);
+   $('#scanReceiptBtn')&&($('#scanReceiptBtn').onclick=scanReceipt);
+   bindReceiptResultV84();
 
- $$('[data-asset-tab]').forEach(btn=>btn.onclick=()=>{
-   assetTab=['investment','property','physical'].includes(btn.dataset.assetTab)
-     ?btn.dataset.assetTab
-     :'investment';
-   render();
- });
- $('#addAssetBtn')&&($('#addAssetBtn').onclick=()=>openAssetModal());
- $$('[data-edit-asset]').forEach(btn=>btn.onclick=()=>openAssetModal(btn.dataset.editAsset));
- $$('[data-delete-asset]').forEach(btn=>btn.onclick=()=>{
-   const asset=(state.assets[assetTab]||[]).find(v=>v.id===btn.dataset.deleteAsset);
-   if(!asset)return;
-   openConfirm('Hapus Aset',`Hapus ${asset.name}?`,'Hapus',()=>{
-     state.assets[assetTab]=state.assets[assetTab].filter(v=>v.id!==asset.id);
-     save();
-     toast('Aset dihapus.');
-     render();
-   });
- });
- $('#refreshGoldAllBtn')&&($('#refreshGoldAllBtn').onclick=()=>refreshAllGoldPrices(true));
- if(currentPage==='assets'&&assetTab==='physical')refreshAllGoldPrices(false);
+ }else if(currentPage==='accounts'){
+   $('#addAccountBtn')&&($('#addAccountBtn').onclick=()=>openAccountModal());
+   $$('[data-edit-account]').forEach(btn=>btn.onclick=()=>openAccountModal(btn.dataset.editAccount));
+   $$('[data-delete-account]').forEach(btn=>btn.onclick=()=>requestDeleteAccount(btn.dataset.deleteAccount));
 
- $$('[data-debt-tab]').forEach(btn=>btn.onclick=()=>{
-   const next=btn.dataset.debtTab;
-   debtTab=['debts','bills','routines'].includes(next)?next:'debts';
-   render();
- });
+ }else if(currentPage==='plans'){
+   bindPeriod('planMonthInput',()=>planPeriod,v=>{planPeriod=v;localStorage.setItem('uangku_plan_period',v)});
+   $$('[data-plan-tab]').forEach(btn=>btn.onclick=()=>{planTab=btn.dataset.planTab==='goal'?'goal':'budget';render()});
+   $('#addBudgetBtn')&&($('#addBudgetBtn').onclick=()=>openBudgetModal());
+   $$('[data-edit-budget]').forEach(btn=>btn.onclick=()=>openBudgetModal(btn.dataset.editBudget));
+   $$('[data-delete-budget]').forEach(btn=>btn.onclick=()=>{const budget=state.budgets.find(v=>v.id===btn.dataset.deleteBudget);if(!budget)return;openConfirm('Hapus Budget',`Hapus budget ${budget.category} untuk ${monthLabel(budget.month)}?`,'Hapus',()=>{state.budgets=state.budgets.filter(v=>v.id!==budget.id);save();toast('Budget dihapus.');render()})});
+   $$('[data-budget-detail]').forEach(card=>{card.onclick=e=>{if(e.target.closest('button'))return;openBudgetCategoryDetailV75(card.dataset.budgetDetail)};card.onkeydown=e=>{if(e.target.closest('button'))return;if(e.key==='Enter'||e.key===' '){e.preventDefault();openBudgetCategoryDetailV75(card.dataset.budgetDetail)}}});
+   $('#addGoalBtn')&&($('#addGoalBtn').onclick=()=>openGoalModal());
+   $$('[data-edit-goal]').forEach(btn=>btn.onclick=()=>openGoalModal(btn.dataset.editGoal));
+   $$('[data-add-goal]').forEach(btn=>btn.onclick=()=>openGoalAllocationModal(btn.dataset.addGoal));
+   $$('[data-connect-goal]').forEach(btn=>btn.onclick=()=>openConnectLegacyGoalModal(btn.dataset.connectGoal));
+   $$('[data-delete-goal]').forEach(btn=>btn.onclick=()=>{const goal=state.goals.find(x=>x.id===btn.dataset.deleteGoal);if(!goal)return;openConfirm('Hapus Target',`Hapus target ${goal.name}? Alokasi dana target akan dilepas kembali menjadi dana bebas, tetapi saldo akun tidak berubah.`,'Hapus',()=>{state.goals=state.goals.filter(x=>x.id!==goal.id);save();toast('Target dihapus. Dana kembali dianggap bebas.');render()})});
 
- $('#addDebtBtn')&&($('#addDebtBtn').onclick=()=>openDebtModal());
- $$('[data-edit-debt]').forEach(btn=>btn.onclick=()=>openDebtModal(btn.dataset.editDebt));
- $$('[data-delete-debt]').forEach(btn=>btn.onclick=()=>requestDeleteDebt(btn.dataset.deleteDebt));
- $$('[data-pay-debt]').forEach(btn=>btn.onclick=()=>openDebtPaymentModal(btn.dataset.payDebt,false));
- $$('[data-paid-debt]').forEach(btn=>btn.onclick=()=>openDebtPaymentModal(btn.dataset.paidDebt,true));
+ }else if(currentPage==='assets'){
+   $$('[data-asset-tab]').forEach(btn=>btn.onclick=()=>{assetTab=['investment','property','physical'].includes(btn.dataset.assetTab)?btn.dataset.assetTab:'investment';render()});
+   $('#addAssetBtn')&&($('#addAssetBtn').onclick=()=>openAssetModal());
+   $$('[data-edit-asset]').forEach(btn=>btn.onclick=()=>openAssetModal(btn.dataset.editAsset));
+   $$('[data-delete-asset]').forEach(btn=>btn.onclick=()=>{const asset=(state.assets[assetTab]||[]).find(v=>v.id===btn.dataset.deleteAsset);if(!asset)return;openConfirm('Hapus Aset',`Hapus ${asset.name}?`,'Hapus',()=>{state.assets[assetTab]=state.assets[assetTab].filter(v=>v.id!==asset.id);save();toast('Aset dihapus.');render()})});
+   $('#refreshGoldAllBtn')&&($('#refreshGoldAllBtn').onclick=()=>refreshAllGoldPrices(true));
+   if(assetTab==='physical')refreshAllGoldPrices(false);
 
- $('#addBillBtn')&&($('#addBillBtn').onclick=()=>openBillModal());
- $$('[data-edit-bill]').forEach(btn=>btn.onclick=()=>openBillModal(btn.dataset.editBill));
- $$('[data-delete-bill]').forEach(btn=>btn.onclick=()=>requestDeleteBill(btn.dataset.deleteBill));
- $$('[data-paid-bill]').forEach(btn=>btn.onclick=()=>openBillPaymentModal(btn.dataset.paidBill));
+ }else if(currentPage==='debts'){
+   $$('[data-debt-tab]').forEach(btn=>btn.onclick=()=>{const next=btn.dataset.debtTab;debtTab=['debts','bills','routines'].includes(next)?next:'debts';render()});
+   $('#addDebtBtn')&&($('#addDebtBtn').onclick=()=>openDebtModal());
+   $$('[data-edit-debt]').forEach(btn=>btn.onclick=()=>openDebtModal(btn.dataset.editDebt));
+   $$('[data-delete-debt]').forEach(btn=>btn.onclick=()=>requestDeleteDebt(btn.dataset.deleteDebt));
+   $$('[data-pay-debt]').forEach(btn=>btn.onclick=()=>openDebtPaymentModal(btn.dataset.payDebt,false));
+   $$('[data-paid-debt]').forEach(btn=>btn.onclick=()=>openDebtPaymentModal(btn.dataset.paidDebt,true));
+   $('#addBillBtn')&&($('#addBillBtn').onclick=()=>openBillModal());
+   $$('[data-edit-bill]').forEach(btn=>btn.onclick=()=>openBillModal(btn.dataset.editBill));
+   $$('[data-delete-bill]').forEach(btn=>btn.onclick=()=>requestDeleteBill(btn.dataset.deleteBill));
+   $$('[data-paid-bill]').forEach(btn=>btn.onclick=()=>openBillPaymentModal(btn.dataset.paidBill));
+   $('#addRoutineBtn')&&($('#addRoutineBtn').onclick=()=>openRoutineModalV81());
+   $$('[data-edit-routine]').forEach(btn=>btn.onclick=()=>openRoutineModalV81(btn.dataset.editRoutine));
+   $$('[data-record-routine]').forEach(btn=>btn.onclick=()=>openRoutineRecordModalV81(btn.dataset.recordRoutine));
+   $$('[data-delete-routine]').forEach(btn=>btn.onclick=()=>requestDeleteRoutineV81(btn.dataset.deleteRoutine));
 
- $('#addRoutineBtn')&&($('#addRoutineBtn').onclick=()=>openRoutineModalV81());
- $$('[data-edit-routine]').forEach(btn=>btn.onclick=()=>openRoutineModalV81(btn.dataset.editRoutine));
- $$('[data-record-routine]').forEach(btn=>btn.onclick=()=>openRoutineRecordModalV81(btn.dataset.recordRoutine));
- $$('[data-delete-routine]').forEach(btn=>btn.onclick=()=>requestDeleteRoutineV81(btn.dataset.deleteRoutine));
+ }else if(currentPage==='categories'){
+   $('#addCategoryBtn')&&($('#addCategoryBtn').onclick=()=>openCategoryModalV63());
+   $$('[data-edit-cat]').forEach(btn=>btn.onclick=()=>openCategoryModalV63(Number(btn.dataset.editCat)));
+   $$('[data-delete-cat-v63]').forEach(btn=>btn.onclick=()=>deleteCategoryV63(Number(btn.dataset.deleteCatV63)));
 
- $('#addCategoryBtn')&&($('#addCategoryBtn').onclick=()=>openCategoryModalV63());
- $$('[data-edit-cat]').forEach(btn=>btn.onclick=()=>openCategoryModalV63(Number(btn.dataset.editCat)));
- $$('[data-delete-cat-v63]').forEach(btn=>btn.onclick=()=>deleteCategoryV63(Number(btn.dataset.deleteCatV63)));
+ }else if(currentPage==='reports'){
+   bindPeriod('reportMonthInput',()=>reportPeriod,v=>{reportPeriod=v;localStorage.setItem('uangku_report_period',v)});
 
- $('#toggleHomeSummaryV65')&&($('#toggleHomeSummaryV65').onclick=()=>{
-   homeSummaryExpandedV65=!homeSummaryExpandedV65;
-   localStorage.setItem('uangku_home_summary_v65',homeSummaryExpandedV65?'1':'0');
-   render();
- });
-
- $('#saveUserNameV65')&&($('#saveUserNameV65').onclick=()=>{
-   state.profile=state.profile&&typeof state.profile==='object'?state.profile:{};
-   state.profile.name=String($('#settingsUserNameV65')?.value||'').trim();
-   save();
-   toast(state.profile.name?'Nama pengguna disimpan.':'Nama pengguna dikosongkan.');
-   render();
- });
-
- $('#homeDebtSeeAllV70')&&($('#homeDebtSeeAllV70').onclick=()=>{
-   debtTab='debts';
-   navigate('debts');
- });
-
- $('#exportBtn')&&($('#exportBtn').onclick=exportJSON);
- $('#importBtn')&&($('#importBtn').onclick=()=>$('#importFile')?.click());
- $('#importFile')&&($('#importFile').onchange=importJSON);
- $('#resetBtn')&&($('#resetBtn').onclick=()=>{
-   if(confirm('Hapus semua data UangKu?')){
-     localStorage.removeItem('uangku_data_v3');
-     localStorage.removeItem('uangku_balance_hidden');
-     localStorage.removeItem('uangku_include_investment_assets');
-     localStorage.removeItem('uangku_networth_expanded');
-     localStorage.removeItem('uangku_home_period');
-     localStorage.removeItem('uangku_plan_period');
-     localStorage.removeItem('uangku_report_period');
-     state=clone(defaults);
-     balanceHidden=false;
-     includeInvestmentAssets=true;
-     netWorthExpanded=false;
-     homePeriod=monthKey();
-     planPeriod=monthKey();
-     reportPeriod=monthKey();
-     save();
-     navigate('home');
-   }
- });
-
- initFinancialCarouselV78();
- $('#openAccountsV78')&&($('#openAccountsV78').onclick=()=>navigate('accounts'));
- $$('[data-overview-breakdown]').forEach(btn=>btn.onclick=()=>openOverviewBreakdownV78(btn.dataset.overviewBreakdown));
-
+ }else if(currentPage==='settings'){
+   $('#saveUserNameV65')&&($('#saveUserNameV65').onclick=()=>{state.profile=state.profile&&typeof state.profile==='object'?state.profile:{};state.profile.name=String($('#settingsUserNameV65')?.value||'').trim();save();toast(state.profile.name?'Nama pengguna disimpan.':'Nama pengguna dikosongkan.');render()});
+   $('#exportBtn')&&($('#exportBtn').onclick=exportJSON);
+   $('#importBtn')&&($('#importBtn').onclick=()=>$('#importFile')?.click());
+   $('#importFile')&&($('#importFile').onchange=importJSON);
+   $('#resetBtn')&&($('#resetBtn').onclick=()=>{if(confirm('Hapus semua data UangKu?')){localStorage.removeItem('uangku_data_v3');localStorage.removeItem('uangku_balance_hidden');localStorage.removeItem('uangku_include_investment_assets');localStorage.removeItem('uangku_networth_expanded');localStorage.removeItem('uangku_home_period');localStorage.removeItem('uangku_plan_period');localStorage.removeItem('uangku_report_period');state=clone(defaults);balanceHidden=false;includeInvestmentAssets=true;netWorthExpanded=false;homePeriod=monthKey();planPeriod=monthKey();reportPeriod=monthKey();save();navigate('home')}});
+ }
  bindNumericInputUX($('#content'));
 }
 
@@ -4037,8 +4311,8 @@ function homeExpenseComposition(k){
 
   const values={debt:0,bills:0,needs:0,wants:0,sales:0,other:0};
 
-  state.transactions
-    .filter(t=>t&&t.type==='expense'&&monthKey(t.date)===k)
+  monthTransactionsV83(k)
+    .filter(t=>t.type==='expense')
     .forEach(t=>{
       const group=expenseGroupForTxV63(t)||'other';
       values[group]=(values[group]||0)+(Number(t.amount)||0);
@@ -4208,8 +4482,8 @@ function monthlyHomeSummaryV65(k){
   let debt=0;
   let wantsOnly=0;
 
-  state.transactions
-    .filter(t=>t&&t.type==='expense'&&monthKey(t.date)===k)
+  monthTransactionsV83(k)
+    .filter(t=>t.type==='expense')
     .forEach(t=>{
       const n=Number(t.amount)||0;
       if(typeof isDebtExpenseTx==='function' && isDebtExpenseTx(t)){
@@ -4741,43 +5015,43 @@ function transactionCashAmountV73(t){
 }
 
 function accountBalance(id){
-  const a=state.accounts.find(x=>x&&x.id===id);
-  let b=Number(a?.initial||0);
-
-  state.transactions.forEach(t=>{
-    if(!t)return;
-    const amount=transactionCashAmountV73(t);
-
-    if(t.type==='income'&&t.accountId===id)b+=amount;
-    else if(t.type==='expense'&&t.accountId===id)b-=amount;
-    else if(t.type==='transfer'){
-      const n=Math.max(0,Number(t.amount)||0);
-      if(t.fromAccountId===id)b-=n;
-      if(t.toAccountId===id)b+=n;
-    }
-  });
-
-  return b;
+  const cache=ensureDerivedCacheV83();
+  if(!cache.accountBalances){
+    const balances=new Map();
+    (state.accounts||[]).forEach(a=>{if(a?.id)balances.set(a.id,Number(a.initial)||0)});
+    (state.transactions||[]).forEach(t=>{
+      if(!t)return;
+      const amount=transactionCashAmountV73(t);
+      if(t.type==='income'&&t.accountId)balances.set(t.accountId,(balances.get(t.accountId)||0)+amount);
+      else if(t.type==='expense'&&t.accountId)balances.set(t.accountId,(balances.get(t.accountId)||0)-amount);
+      else if(t.type==='transfer'){
+        const n=Math.max(0,Number(t.amount)||0);
+        if(t.fromAccountId)balances.set(t.fromAccountId,(balances.get(t.fromAccountId)||0)-n);
+        if(t.toAccountId)balances.set(t.toAccountId,(balances.get(t.toAccountId)||0)+n);
+      }
+    });
+    cache.accountBalances=balances;
+  }
+  return cache.accountBalances.get(id)||0;
 }
 
 function monthTotals(k=monthKey()){
+  const cache=ensureDerivedCacheV83();
+  if(cache.monthTotals.has(k))return cache.monthTotals.get(k);
   let income=0,expense=0;
-
-  state.transactions
-    .filter(t=>t&&monthKey(t.date)===k)
-    .forEach(t=>{
-      if(t.type==='income')income+=transactionCashAmountV73(t);
-      else if(t.type==='expense')expense+=transactionCashAmountV73(t);
-    });
-
-  return {income,expense,net:income-expense};
+  monthTransactionsV83(k).forEach(t=>{
+    if(t.type==='income')income+=transactionCashAmountV73(t);
+    else if(t.type==='expense')expense+=transactionCashAmountV73(t);
+  });
+  const result={income,expense,net:income-expense};
+  cache.monthTotals.set(k,result);
+  return result;
 }
 
 function monthlySavingsAddedV65(k){
   let savingsAccountNet=0;
 
-  state.transactions
-    .filter(t=>t&&monthKey(t.date)===k)
+  monthTransactionsV83(k)
     .forEach(t=>{
       if(t.type==='income'&&isSavingsAccountV65(t.accountId)){
         savingsAccountNet+=transactionCashAmountV73(t);
@@ -5016,8 +5290,7 @@ function salesSummary(k){
   let received=0;
   let expense=0;
 
-  state.transactions
-    .filter(t=>t&&monthKey(t.date)===k)
+  monthTransactionsV83(k)
     .forEach(t=>{
       const cat=String(t.category||'');
 
@@ -6272,35 +6545,41 @@ function startVoice(){
   }
 }
 
+window.onVoiceListening=()=>{
+  const title=$('.voice-title-v79');
+  if(title)title.textContent='Aku mendengarkan...';
+};
+
+window.onVoiceSpeechStart=()=>{
+  const title=$('.voice-title-v79');
+  if(title)title.textContent='Aku dengar, lanjutkan...';
+};
+
+window.onVoiceSpeechEnd=()=>{
+  const title=$('.voice-title-v79');
+  if(title)title.textContent='Memahami ucapanmu...';
+};
+
+window.onVoicePartial=text=>{
+  const preview=$('#voicePartialV85');
+  if(preview)preview.textContent=String(text||'').trim();
+};
+
 window.onVoiceResult=text=>{
   const clean=String(text||'').trim();
-
   navigate('assistant');
-
   setTimeout(()=>{
     if(!clean){
-      const answer='Aku belum menangkap suaranya. Tekan mikrofon dan coba ucapkan lagi.';
-      state.chat.push({role:'bot',text:answer});
-      save();
-      render();
-      speakAssistantV79(answer);
+      toast('Aku belum menangkap suaranya. Tekan mikrofon dan coba lagi.');
       return;
     }
-
     appendAssistantExchangeV79(clean,{speak:true});
-  },120);
+  },80);
 };
 
 window.onVoiceError=msg=>{
   navigate('assistant');
-
-  setTimeout(()=>{
-    const answer=`Aku belum berhasil mendengar dengan jelas. ${String(msg||'Coba tekan mikrofon dan ucapkan lagi.')}`;
-    state.chat.push({role:'bot',text:answer});
-    save();
-    render();
-    speakAssistantV79(answer);
-  },80);
+  setTimeout(()=>toast(String(msg||'Pengenalan suara belum berhasil. Coba lagi.')),70);
 };
 
 function renderAssistant(){
@@ -6341,6 +6620,7 @@ function renderVoice(){
       Contoh: “Saldo SEABANK berapa?” atau “Keluar dua puluh lima ribu makan”.
     </div>
 
+    <div id="voicePartialV85" class="voice-partial-v85">Mulai bicara setelah mikrofon siap…</div>
     <div class="voice-wave">${'<i></i>'.repeat(6)}</div>
     <button class="stop-btn" id="voiceStop">■</button>
 
@@ -6460,5 +6740,18 @@ function renderNetWorthSlideV78(m,debts,worth,cash,savings){
   </section>`;
 }
 
+function cleanupLegacyVoiceErrorSpamV85(){
+  const key='uangku_voice_error_cleanup_v85';
+  if(localStorage.getItem(key)==='1')return;
+  const before=Array.isArray(state.chat)?state.chat.length:0;
+  state.chat=(state.chat||[]).filter(m=>{
+    const text=String(m?.text||'');
+    return !(m?.role==='bot' && text.startsWith('Aku belum berhasil mendengar dengan jelas. Pengenalan suara tidak tersedia di perangkat ini.'));
+  });
+  if(state.chat.length!==before)save();
+  localStorage.setItem(key,'1');
+}
+
+cleanupLegacyVoiceErrorSpamV85();
 applyThemeV82(false);
 setHeader('home');render();

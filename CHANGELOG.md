@@ -1,5 +1,39 @@
 # Changelog
 
+## 8.5.0 — Native Voice Fix
+
+- Mengganti jalur utama voice ke Android `SpeechRecognizer` native.
+- Menambahkan `RecognitionListener`, partial result, dan stop/cancel native.
+- Menambahkan manifest query untuk speech recognition + fallback RecognizerIntent.
+- Error voice tidak lagi memenuhi riwayat chat.
+- Membersihkan spam error teknis lama satu kali.
+- Menambahkan `tests/native-voice.js`.
+- `versionCode` 85 / `versionName` 8.5.0.
+
+## 8.4.0 — Receipt Scanner
+
+- Tombol kamera Foto Struk sekarang membuka kamera Android langsung lewat `ACTION_IMAGE_CAPTURE`.
+- Menambahkan FileProvider untuk foto kamera sementara.
+- Galeri dipisahkan ke `ACTION_OPEN_DOCUMENT`.
+- OCR ML Kit membaca URI foto asli agar teks kecil pada struk tidak hilang karena kompresi awal.
+- Preview foto dikoreksi berdasarkan orientasi EXIF.
+- OCR berjalan otomatis setelah kamera/galeri selesai.
+- Parser total struk memprioritaskan GRAND TOTAL / TOTAL BAYAR dan mengabaikan Cash/Tunai, Kembalian, Diskon, Pajak, serta nomor referensi.
+- Menambahkan halaman review hasil scan sebelum transaksi dibuat.
+- Menambahkan `tests/receipt-scanner.js`.
+- `versionCode` 84 / `versionName` 8.4.0.
+
+## 8.3.0 — Responsif & Ringan
+
+- Page-scoped event binding.
+- Cache runtime saldo akun dan transaksi bulanan.
+- Tap/navigasi dibuat lebih langsung.
+- Backdrop blur berat dihapus.
+- WebView hardware acceleration dipastikan aktif.
+- Fix Kotlin duplicate classes dimasukkan.
+- Performance smoke test ditambahkan.
+- versionCode 83 / versionName 8.3.0.
+
 ## 8.2.0 — Tema Terang & Gelap
 
 - Menambahkan tombol tema di Beranda pojok kanan atas.

@@ -2,33 +2,18 @@ plugins {
     id 'com.android.application'
 }
 
-/*
- * UangKu v8.2
- * Kotlin duplicate-class compatibility fix.
- *
- * Kotlin 1.8+ sudah memasukkan isi kotlin-stdlib-jdk7/jdk8
- * ke dalam kotlin-stdlib utama. Dependency lama yang masih
- * membawa jdk7/jdk8 harus dibuang agar tidak ada class ganda.
- */
+// Fix duplicate Kotlin classes from older transitive dependencies.
 configurations.configureEach {
     exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
     exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-
-    resolutionStrategy {
-        force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
-    }
+    resolutionStrategy { force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22' }
 }
 
 def releaseKeystorePath = System.getenv("UANGKU_KEYSTORE_PATH")
 def releaseStorePassword = System.getenv("UANGKU_KEYSTORE_PASSWORD")
 def releaseKeyAlias = System.getenv("UANGKU_KEY_ALIAS")
 def releaseKeyPassword = System.getenv("UANGKU_KEY_PASSWORD")
-
-def releaseSigningReady =
-        releaseKeystorePath &&
-        releaseStorePassword &&
-        releaseKeyAlias &&
-        releaseKeyPassword
+def releaseSigningReady = releaseKeystorePath && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
 
 android {
     namespace 'com.uangku.app'
@@ -36,12 +21,10 @@ android {
 
     defaultConfig {
         applicationId "com.uangku.app"
-
         minSdk 24
         targetSdk 35
-
-        versionCode 82
-        versionName "8.2.0"
+        versionCode 85
+        versionName "8.5.0"
     }
 
     signingConfigs {
@@ -55,28 +38,19 @@ android {
         }
     }
 
-    buildTypes {
-        debug {
-            minifyEnabled false
-        }
-
-        release {
-            minifyEnabled false
-
-            if (releaseSigningReady) {
-                signingConfig signingConfigs.release
-            }
-
-            proguardFiles(
-                    getDefaultProguardFile('proguard-android-optimize.txt'),
-                    'proguard-rules.pro'
-            )
-        }
-    }
-
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (releaseSigningReady) {
+                signingConfig signingConfigs.release
+            }
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
     }
 }
 

@@ -3033,3 +3033,126 @@ html[data-theme="dark"] a{color:#82B5F2}
   .top-actions{width:76px}
   .top-icon{width:37px;height:37px}
 }
+\n\n/* ===== UANGKU V8.3 PERFORMANCE HARDENING ===== */
+button,a,[role="button"],.tab,.menu-card,.list-item,.period-arrow,.finance-arrow-v78{
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+.topbar{
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  background:#F7FAF4!important;
+}
+.bottom-nav{
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  background:#FFFFFF!important;
+}
+html[data-theme="dark"] .topbar{background:#111821!important}
+html[data-theme="dark"] .bottom-nav{background:#141D27!important}
+button:active{transition:none!important}
+html{scroll-behavior:auto!important}
+
+
+/* ===== UANGKU V8.4 RECEIPT SCANNER ===== */
+.receipt-box-v84{padding:14px}
+.receipt-box-v84 .receipt-stage{position:relative}
+.receipt-scan-overlay-v84{
+  position:absolute;inset:0;z-index:4;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:7px;padding:24px;text-align:center;
+  background:rgba(20,32,27,.68);color:#fff;
+  backdrop-filter:blur(2px)
+}
+.receipt-scan-overlay-v84 b{font-size:12px}
+.receipt-scan-overlay-v84 small{font-size:8px;opacity:.86;line-height:1.4}
+.receipt-spinner-v84{
+  width:29px;height:29px;border-radius:50%;
+  border:3px solid rgba(255,255,255,.28);
+  border-top-color:#fff;
+  animation:receiptSpinV84 .75s linear infinite
+}
+@keyframes receiptSpinV84{to{transform:rotate(360deg)}}
+
+.receipt-tip-v84{
+  margin:11px 0 12px;padding:10px 11px;text-align:left;
+  border-radius:14px;background:#F4FAF1;border:1px solid #E0EEDB
+}
+.receipt-tip-v84 b{display:block;color:#31506E;font-size:9px}
+.receipt-tip-v84 span{display:block;margin-top:3px;color:#7B8980;font-size:8px;line-height:1.4}
+.receipt-status-v84{
+  min-height:18px;margin-top:9px;
+  color:#75869B;font-size:8.5px;line-height:1.4;text-align:left
+}
+
+.receipt-result-v84{
+  margin-top:11px;padding:12px;
+  border:1px solid var(--line);border-radius:17px;
+  background:#FAFCF9;text-align:left
+}
+.receipt-result-head-v84{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+  margin-bottom:11px
+}
+.receipt-result-head-v84 b{display:block;color:#17345C;font-size:11px}
+.receipt-result-head-v84 small{display:block;margin-top:2px;color:#819087;font-size:7.5px}
+.receipt-result-head-v84>span{
+  flex:none;padding:5px 7px;border-radius:999px;
+  background:#E8F7E7;color:#238B3F;font-size:7px;font-weight:800
+}
+.receipt-review-grid-v84{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.receipt-review-grid-v84 label{min-width:0}
+.receipt-review-grid-v84 label>span{
+  display:block;margin:0 0 5px;color:#718077;font-size:7.5px;font-weight:700
+}
+.receipt-review-grid-v84 input,
+.receipt-review-grid-v84 select{
+  width:100%;min-width:0;border:1px solid #E2E9E0;border-radius:12px;
+  padding:9px 10px;background:#fff;color:#17345C;
+  font-family:"Nunito",sans-serif;font-size:9px;outline:none
+}
+.receipt-review-grid-v84 input:focus,
+.receipt-review-grid-v84 select:focus{
+  border-color:#6BC878;box-shadow:0 0 0 2px rgba(47,165,68,.08)
+}
+.receipt-raw-toggle-v84{
+  width:100%;margin-top:7px;border:0;background:transparent;
+  color:#6F8496;font-size:7.5px;text-decoration:underline
+}
+.receipt-raw-v84{
+  max-height:180px;overflow:auto;margin:8px 0 0;padding:9px;
+  border-radius:10px;background:#F0F4EE;color:#52636F;
+  font-size:7px;line-height:1.45;white-space:pre-wrap
+}
+
+html[data-theme="dark"] .receipt-tip-v84{
+  background:#1D2D24;border-color:#2D4536
+}
+html[data-theme="dark"] .receipt-tip-v84 b,
+html[data-theme="dark"] .receipt-result-head-v84 b{color:var(--text)}
+html[data-theme="dark"] .receipt-tip-v84 span,
+html[data-theme="dark"] .receipt-status-v84,
+html[data-theme="dark"] .receipt-result-head-v84 small,
+html[data-theme="dark"] .receipt-review-grid-v84 label>span{color:var(--muted)}
+html[data-theme="dark"] .receipt-result-v84{
+  background:var(--surface2);border-color:var(--line)
+}
+html[data-theme="dark"] .receipt-result-head-v84>span{
+  background:#203B2A;color:#6BD17C
+}
+html[data-theme="dark"] .receipt-review-grid-v84 input,
+html[data-theme="dark"] .receipt-review-grid-v84 select{
+  background:#141D27;color:var(--text);border-color:var(--line)
+}
+html[data-theme="dark"] .receipt-raw-v84{
+  background:#111821;color:#A7B6C4
+}
+
+@media(max-width:390px){
+  .receipt-review-grid-v84{grid-template-columns:1fr}
+}
+
+
+/* ===== UANGKU V8.5 NATIVE VOICE ===== */
+.voice-partial-v85{min-height:36px;margin:14px auto 0;max-width:360px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:10px;line-height:1.4;padding:8px 12px;border-radius:14px;background:var(--surface2);border:1px solid var(--line)}
+html[data-theme="dark"] .voice-partial-v85{background:#18222E;border-color:#2B3947}

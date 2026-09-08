@@ -1,8 +1,8 @@
-# UangKu v8.2 — Tema Terang & Gelap
+# UangKu v8.5 — Native Voice Fix
 
 UangKu adalah aplikasi keuangan Android mobile-first berbasis WebView lokal.
 
-Versi 8.2 melanjutkan fondasi Daily Use Hardening v8.1 dan menambahkan tema **Terang / Gelap** tanpa mengubah struktur fitur utama.
+Versi 8.5 memperbaiki alur Foto Struk: tombol kamera membuka kamera Android secara langsung dan OCR membaca foto asli beresolusi tinggi, lalu menampilkan hasil untuk dicek sebelum dijadikan transaksi.
 
 ## Fitur utama
 
@@ -20,6 +20,64 @@ Versi 8.2 melanjutkan fondasi Daily Use Hardening v8.1 dan menambahkan tema **Te
 - Laporan dan insight
 - Kategori kustom
 - Export / import JSON dengan versioned backup schema
+
+## Perubahan v8.5
+
+### Voice Assistant Android
+- Mikrofon sekarang memakai **Android SpeechRecognizer langsung di dalam aplikasi**.
+- Menambahkan query service recognition untuk Android 11+ dan fallback `RecognizerIntent`.
+- Hasil ucapan parsial ditampilkan saat bicara.
+- Tombol stop menghentikan recognizer native.
+- Error voice tidak lagi disimpan sebagai bubble chat berulang.
+- Spam error teknis lama yang identik dibersihkan satu kali.
+- Pesan error dibedakan untuk izin mikrofon, koneksi, tidak ada ucapan, recognizer sibuk, dan server.
+- `versionCode = 85`, `versionName = 8.5.0`.
+
+## Perubahan v8.4
+
+### Kamera struk langsung
+- Tombol **Ambil Foto dari Kamera** memakai `ACTION_IMAGE_CAPTURE`, jadi pada APK tidak lagi masuk ke pemilih galeri.
+- Foto kamera disimpan sementara melalui Android `FileProvider`.
+- Tombol **Pilih dari Galeri** tetap terpisah dan khusus membuka gambar.
+
+### OCR struk lebih akurat
+- ML Kit sekarang membaca **URI foto asli** dari kamera/galeri, bukan hanya JPEG 1280px yang sudah dikompres.
+- Orientasi foto dipertahankan untuk OCR dan preview dikoreksi memakai metadata EXIF.
+- Setelah foto dipilih, OCR berjalan otomatis.
+- Tombol **Scan Ulang** tetap tersedia.
+
+### Deteksi total yang lebih aman
+- Parser tidak lagi sekadar mengambil angka terbesar di struk.
+- Baris seperti **GRAND TOTAL, TOTAL BAYAR, TOTAL BELANJA, JUMLAH BAYAR** diprioritaskan.
+- **Tunai/Cash, Kembalian/Change, Diskon, PPN/Tax, nomor invoice/member/telepon** tidak dianggap total belanja.
+- Format `25.000`, `25,000`, `25.000,00`, dan `25,000.00` didukung.
+
+### Review sebelum transaksi
+Hasil scan menampilkan:
+- merchant/toko,
+- total belanja,
+- tanggal,
+- kategori.
+
+Pengguna dapat mengoreksi hasil sebelum menekan **Gunakan Hasil Scan**, lalu UangKu mengisi form transaksi pengeluaran.
+
+### Build
+- `versionCode = 84`, `versionName = 8.4.0`.
+- Menambahkan `tests/receipt-scanner.js`.
+
+## Perubahan v8.3
+
+- Event binding dibatasi per halaman agar klik tidak memindai semua tombol aplikasi.
+- Navigasi tidak lagi menjalankan smooth scroll setelah tap.
+- Saldo akun serta data transaksi bulanan memakai cache runtime yang otomatis dibersihkan saat data berubah.
+- `touch-action: manipulation` untuk respons tap yang lebih langsung.
+- Backdrop blur pada header dan bottom navigation dihapus karena berat pada sebagian WebView Android.
+- Hardware acceleration WebView dipastikan aktif.
+- Over-scroll dan scrollbar WebView yang tidak perlu dimatikan.
+- Fix duplicate Kotlin stdlib dimasukkan ke project agar build GitHub tetap aman.
+- GitHub Actions checkout/setup-java diperbarui.
+- Menambahkan `tests/performance-smoke.js`.
+- `versionCode = 83`, `versionName = 8.3.0`.
 
 ## Perubahan v8.2
 
@@ -76,7 +134,7 @@ Import lama tetap didukung. Backup dari versi yang lebih baru akan ditolak agar 
 
 GitHub Actions selalu membuat debug APK untuk pengujian. Jika 4 signing secret telah dipasang, workflow juga menghasilkan artifact:
 
-`UangKu-v8.2-SIGNED-release-apk`
+`UangKu-v8.5-SIGNED-release-apk`
 
 Gunakan release APK untuk instalasi harian dan update selanjutnya. Lihat **SIGNING_SETUP.md**.
 

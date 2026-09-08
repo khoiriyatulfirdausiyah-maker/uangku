@@ -1,0 +1,20 @@
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const java=fs.readFileSync(path.join(root,'app/src/main/java/com/uangku/app/MainActivity.java'),'utf8');
+const manifest=fs.readFileSync(path.join(root,'app/src/main/AndroidManifest.xml'),'utf8');
+const js=fs.readFileSync(path.join(root,'app/src/main/assets/app.js'),'utf8');
+const gradle=fs.readFileSync(path.join(root,'app/build.gradle'),'utf8');
+function ok(cond,msg){if(!cond)throw new Error(msg);console.log(msg+':OK')}
+ok(java.includes('SpeechRecognizer.createSpeechRecognizer(this)'),'native-speech-recognizer');
+ok(java.includes('setRecognitionListener(new RecognitionListener()'),'recognition-listener');
+ok(java.includes('SpeechRecognizer.RESULTS_RECOGNITION'),'recognition-results');
+ok(java.includes('public void stopVoice()'),'voice-stop-bridge');
+ok(java.includes('startActivityForResult(buildVoiceIntent(), REQ_VOICE)'),'classic-fallback');
+ok(manifest.includes('android.speech.RecognitionService'),'speech-service-query');
+ok(manifest.includes('android.permission.RECORD_AUDIO'),'record-audio-permission');
+ok(js.includes('window.onVoicePartial'),'partial-result-ui');
+ok(js.includes("if(window.Native?.stopVoice) Native.stopVoice()"),'stop-button-native');
+ok(js.includes("window.onVoiceError=msg=>{\n  navigate('assistant');\n  setTimeout(()=>toast"),'voice-error-toast-only');
+ok(js.includes("const APP_VERSION='8.5.0';"),'app-version-8.5');
+ok(/versionCode\s+85/.test(gradle)&&/versionName\s+"8\.5\.0"/.test(gradle),'android-version-8.5');
