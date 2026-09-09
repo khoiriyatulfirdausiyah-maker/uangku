@@ -3,22 +3,24 @@ name: Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: ["main", "master"]
+    branches:
+      - main
+      - master
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Setup Node 20
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - name: UangKu code health
+      - name: UangKu code health tests
         run: node tests/code-health.js
 
       - name: UangKu finance smoke tests
@@ -57,7 +59,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install SDK packages
+      - name: Install Android SDK packages
         run: |
           sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
@@ -77,7 +79,10 @@ jobs:
           KEY_ALIAS: ${{ secrets.UANGKU_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.UANGKU_KEY_PASSWORD }}
         run: |
-          if [ -n "$KEYSTORE_B64" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+          if [ -n "$KEYSTORE_B64" ] && \
+             [ -n "$STORE_PASSWORD" ] && \
+             [ -n "$KEY_ALIAS" ] && \
+             [ -n "$KEY_PASSWORD" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
@@ -100,11 +105,12 @@ jobs:
           UANGKU_KEY_PASSWORD: ${{ secrets.UANGKU_KEY_PASSWORD }}
         run: gradle assembleRelease --stacktrace
 
-          - name: Upload test/debug APK
+      - name: Upload test/debug APK
         uses: actions/upload-artifact@v4
         with:
           name: UangKu-v8.11-TEST-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
 
       - name: Upload signed release APK
         if: steps.signing.outputs.ready == 'true'
@@ -112,7 +118,4 @@ jobs:
         with:
           name: UangKu-v8.11-SIGNED-release-apk
           path: app/build/outputs/apk/release/app-release.apk
-      - name: Upload signed release APK
-        if: steps.signing.outputs.ready == 'true'
-        uses: actions/upload-artifact@v4
-       
+          if-no-files-found: error
