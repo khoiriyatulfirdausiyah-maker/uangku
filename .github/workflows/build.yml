@@ -33,17 +33,20 @@ jobs:
       - name: UangKu performance tests
         run: node tests/performance-smoke.js
 
-      - name: UangKu receipt scanner tests
-        run: node tests/receipt-scanner.js
+      - name: UangKu no-voice tests
+        run: node tests/no-voice.js
 
-      - name: UangKu receipt accuracy tests
-        run: node tests/receipt-accuracy.js
+      - name: UangKu manual-input-only tests
+        run: node tests/manual-input-only.js
 
-      - name: UangKu native voice tests
-        run: node tests/native-voice.js
+      - name: UangKu category split tests
+        run: node tests/category-split.js
 
-      - name: UangKu voice recovery tests
-        run: node tests/voice-recovery.js
+      - name: UangKu performance rebuild tests
+        run: node tests/performance-rebuild.js
+
+      - name: UangKu launcher icon tests
+        run: node tests/launcher-icon.js
 
       - name: Setup Java 17
         uses: actions/setup-java@v5
@@ -100,12 +103,10 @@ jobs:
       - name: Upload test/debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: UangKu-v8.7-TEST-debug-apk
+          name: UangKu-v8.11-TEST-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload signed release APK
         if: steps.signing.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
-        with:
-          name: UangKu-v8.7-SIGNED-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+       
