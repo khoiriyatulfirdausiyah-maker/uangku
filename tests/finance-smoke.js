@@ -13,7 +13,7 @@ const demo={profile:{name:'Firda'},accounts:[{id:'sea',name:'SEABANK',type:'Bank
 context.demo=demo;
 vm.runInContext("globalThis.__getState=()=>state; globalThis.__setState=s=>{state=s}; globalThis.__setOpenModal=f=>{openModal=f};",context);
 vm.runInContext("state=normalizeState(demo); homePeriod='2026-09'; planPeriod='2026-09'; reportPeriod='2026-09'; netWorthExpanded=false; includeInvestmentAssets=false;",context);
-for(const name of ['renderHome','renderTransactions','renderAddTransaction','renderAssistant','renderVoice','renderReceipt','renderAccounts','renderPlans','renderAssets','renderDebtsBills','renderMore','renderReports','renderCategories','renderSettings']){const out=context[name]();assert(typeof out==='string'&&out.length>0,`${name} did not render`)}
+for(const name of ['renderHome','renderTransactions','renderAddTransaction','renderAssistant','renderAccounts','renderPlans','renderAssets','renderDebtsBills','renderMore','renderReports','renderCategories','renderSettings']){const out=context[name]();assert(typeof out==='string'&&out.length>0,`${name} did not render`)}
 context.bindPage();
 const home=context.renderHome(); assert(home.includes('inout-vertical-v711'),'vertical income/expense layout missing'); assert(!home.includes('Arus Kas Sep'),'removed cash-flow card returned'); assert((home.match(/data-finance-slide=/g)||[]).length===3,'financial carousel must have 3 slides');
 const moving=context.movingAccountsV78(); eq(moving.length,3,'moving account count'); assert(!moving.some(a=>['Tabungan','Titipan'].includes(a.type)),'non-moving account included');

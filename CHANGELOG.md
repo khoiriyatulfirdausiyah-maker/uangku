@@ -1,5 +1,50 @@
 # Changelog
 
+## 8.11.0 — Performance Rebuild
+
+- Shared month analytics cache.
+- Cached recent/sorted transaction lists.
+- Transaction pagination at 60 rows per page.
+- Cached budget usage by month/category.
+- Partial DOM refresh for balance privacy and home summary expansion.
+- Removed stale Voice/Receipt CSS and 0 exact duplicate CSS rules.
+- Added 10,000-transaction performance regression test.
+- Replaced launcher icon with user-provided green wallet/leaf artwork.
+- `versionCode` 91 / `versionName` 8.11.0.
+
+## 8.10.0 — Category Split
+
+- Memisahkan kategori Pemasukan dan Pengeluaran.
+- Menambahkan `categoryTypes` dengan tipe income / expense / both.
+- Menambahkan tab Pemasukan dan Pengeluaran pada Kelola Kategori.
+- Budget dan Pengeluaran Rutin hanya memakai kategori Pengeluaran.
+- Memisahkan `Pinjaman Masuk` dari `Cicilan & Bayar Utang`.
+- Menambahkan `Keperluan Usaha / Modal Penjualan` untuk modal jualan termasuk deposit pulsa.
+- Migrasi kategori lama dilakukan satu kali tanpa menghapus histori.
+- Menambahkan `tests/category-split.js`.
+- `versionCode` 90 / `versionName` 8.10.0.
+
+## 8.9.0 — Manual Input Only
+
+- Menghapus fitur Foto Struk.
+- Menghapus kamera/galeri scanner dan OCR receipt.
+- Menghapus ML Kit Text Recognition dan FileProvider receipt.
+- Tombol Tambah langsung membuka transaksi manual.
+- Menghapus receipt tests dari workflow.
+- Voice tetap dihapus.
+- `versionCode` 89 / `versionName` 8.9.0.
+
+## 8.8.0 — No Voice
+
+- Menghapus Voice AI dari UangKu.
+- Menghapus tombol mikrofon dari Asisten.
+- Menghapus Voice AI dari quick-add.
+- Menghapus halaman dan route voice.
+- Menghapus RECORD_AUDIO, SpeechRecognizer, speech-service queries, dan TextToSpeech dari Android.
+- Asisten teks tetap aktif.
+- Menambahkan `tests/no-voice.js`.
+- `versionCode` 88 / `versionName` 8.8.0.
+
 ## 8.7.0 — Voice Recovery
 
 - Memperbaiki race condition SpeechRecognizer yang dapat membuat halaman voice langsung berhenti.

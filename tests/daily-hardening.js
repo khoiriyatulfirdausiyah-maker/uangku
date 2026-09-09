@@ -111,7 +111,7 @@ context.__setState(context.normalizeState(legacy));
 const payload=context.createBackupPayloadV81();
 eq(payload.format,'UangKuBackup','backup format');
 eq(payload.schemaVersion,81,'backup schema');
-eq(payload.appVersion,'8.7.0','backup app version');
+eq(payload.appVersion,'8.11.0','backup app version');
 assert(payload.data&&Array.isArray(payload.data.accounts),'backup data missing');
 
 let newerRejected=false;
@@ -172,13 +172,13 @@ assert(scheduler.includes('rescheduleAll'),'bill reschedule helper missing');
 assert(scheduler.includes('getSharedPreferences'),'bill reminder persistence missing');
 
 const gradle=fs.readFileSync(path.join(root,'app','build.gradle'),'utf8');
-assert(gradle.includes('versionCode 87'),'versionCode must be 86');
-assert(gradle.includes('versionName "8.7.0"'),'versionName must be 8.7.0');
+assert(gradle.includes('versionCode 91'),'versionCode must be 86');
+assert(gradle.includes('versionName "8.11.0"'),'versionName must be 8.11.0');
 assert(gradle.includes('UANGKU_KEYSTORE_PATH'),'release signing env config missing');
 
 const workflow=fs.readFileSync(path.join(root,'.github','workflows','build.yml'),'utf8');
 assert(workflow.includes('UANGKU_KEYSTORE_BASE64'),'GitHub signing secret missing');
-assert(workflow.includes('UangKu-v8.7-SIGNED-release-apk'),'signed artifact missing');
+assert(workflow.includes('UangKu-v8.11-SIGNED-release-apk'),'signed artifact missing');
 assert(workflow.includes('daily-hardening.js'),'hardening test not wired into workflow');
 
 console.log('daily-hardening: OK');

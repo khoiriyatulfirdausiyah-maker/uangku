@@ -1,4 +1,4 @@
-# UangKu v8.7 — Voice Recovery
+# UangKu v8.11 — Performance Rebuild
 
 UangKu adalah aplikasi keuangan Android mobile-first berbasis WebView lokal.
 
@@ -20,6 +20,79 @@ Versi 8.5 memperbaiki alur Foto Struk: tombol kamera membuka kamera Android seca
 - Laporan dan insight
 - Kategori kustom
 - Export / import JSON dengan versioned backup schema
+
+## Perubahan v8.11
+
+- Cache analitik bulanan: ringkasan Beranda, penjualan, saving rate, komposisi pengeluaran, dan pemakaian budget berbagi hasil hitung yang sama.
+- 5 transaksi terakhir memakai cache transaksi terurut.
+- Halaman Transaksi memakai pagination 60 item + **Muat lagi** sehingga tidak membuat ribuan DOM sekaligus.
+- Budget memakai cache pemakaian per bulan/per kategori.
+- Toggle sembunyikan saldo dan buka/tutup Ringkasan Beranda tidak lagi me-render seluruh halaman.
+- CSS mati dari Voice/Foto Struk dibersihkan; exact duplicate rule yang identik dibuang tanpa mengubah tampilan aktif.
+- Benchmark diperketat hingga dataset sintetis 10.000 transaksi.
+- Ikon launcher Android diganti dengan ikon dompet hijau + daun yang diberikan pengguna.
+- UI utama dipertahankan.
+- `versionCode = 91`, `versionName = 8.11.0`.
+
+## Perubahan v8.10
+
+### Kategori dipisahkan berdasarkan jenis transaksi
+- Saat memilih **Pemasukan**, hanya kategori pemasukan yang ditampilkan.
+- Saat memilih **Pengeluaran**, hanya kategori pengeluaran yang ditampilkan.
+- Halaman **Kategori** sekarang punya tab **Pemasukan | Pengeluaran**.
+- Kategori custom bisa ditentukan untuk Pemasukan, Pengeluaran, atau keduanya.
+
+### Kategori Pemasukan bawaan
+- Gaji
+- Bonus / THR
+- Penjualan
+- Pendapatan Usaha
+- Piutang Dibayar
+- Pinjaman Masuk
+- Refund / Pengembalian Dana
+- Lainnya
+
+### Kategori Pengeluaran bawaan
+- Makan & Minum
+- Groceries
+- Transportasi & Bensin
+- Listrik & Utilitas
+- Pakan Hewan
+- Belanja Pribadi
+- Hadiah
+- Hiburan
+- Kantor
+- Tagihan & Langganan
+- Keperluan Usaha / Modal Penjualan
+- Cicilan & Bayar Utang
+- Penyesuaian Saldo
+- Lainnya
+
+`Keperluan Usaha / Modal Penjualan` cocok untuk deposit/saldo pulsa, stok jualan, bahan dimsum, frozen food, dan modal dagangan lainnya.
+
+Data kategori lama dimigrasikan tanpa menghapus transaksi. `versionCode = 90`, `versionName = 8.10.0`.
+
+## Perubahan v8.9
+
+- Fitur **Foto Struk** dihapus seluruhnya.
+- Tombol Tambah (+) sekarang langsung membuka form transaksi manual.
+- Menu Foto Struk di **Lainnya** dihapus.
+- Route, UI, parser OCR, kamera/galeri scanner, dan callback receipt dihapus.
+- ML Kit Text Recognition dan FileProvider khusus struk dihapus dari APK.
+- Fitur Voice tetap tidak ada seperti v8.8.
+- Asisten teks dan seluruh fitur keuangan lainnya tetap dipertahankan.
+- `versionCode = 89`, `versionName = 8.9.0`.
+
+## Perubahan v8.8
+
+- Fitur Voice dihapus seluruhnya.
+- Tombol mikrofon di Asisten dihapus; Asisten tetap bisa dipakai lewat ketikan.
+- Opsi **Voice AI** pada tombol Tambah dihapus.
+- Halaman **Catat dengan Suara** dihapus.
+- Permission mikrofon (`RECORD_AUDIO`), Android `SpeechRecognizer`, fallback speech service, dan Text-to-Speech dihapus dari APK.
+- Riwayat error voice lama yang dibuat aplikasi dibersihkan satu kali tanpa menghapus percakapan normal.
+- Foto Struk, Asisten teks, OCR, budget, akun, transaksi, utang/tagihan/rutin, tema gelap/terang, dan fitur lainnya tetap dipertahankan.
+- `versionCode = 88`, `versionName = 8.8.0`.
 
 ## Perubahan v8.7
 
@@ -164,7 +237,7 @@ Import lama tetap didukung. Backup dari versi yang lebih baru akan ditolak agar 
 
 GitHub Actions selalu membuat debug APK untuk pengujian. Jika 4 signing secret telah dipasang, workflow juga menghasilkan artifact:
 
-`UangKu-v8.7-SIGNED-release-apk`
+`UangKu-v8.11-SIGNED-release-apk`
 
 Gunakan release APK untuk instalasi harian dan update selanjutnya. Lihat **SIGNING_SETUP.md**.
 

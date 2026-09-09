@@ -195,34 +195,16 @@ body{min-height:100vh}
   display:grid;grid-template-columns:1fr 38px 38px;gap:7px
 }
 .chat-input input{width:100%;border:1px solid #DFE7DC;background:#fff;border-radius:15px;padding:11px 12px}
-.voice-btn,.send-btn{border:0;border-radius:13px;display:grid;place-items:center}
-.voice-btn{background:#F0F5EF;color:#456A55}.send-btn{background:var(--green);color:#fff}
+.send-btn{border:0;border-radius:13px;display:grid;place-items:center}
+.send-btn{background:var(--green);color:#fff}
 
-.voice-page{text-align:center;padding-top:34px}
-.voice-mascot{margin:0 auto 18px;position:relative;width:150px;height:145px}
-.voice-wave{display:flex;justify-content:center;align-items:center;gap:4px;height:55px;margin-top:16px}
-.voice-wave i{display:block;width:4px;border-radius:99px;background:#57C76D;animation:pulse 1s ease-in-out infinite alternate}
-.voice-wave i:nth-child(2){animation-delay:.1s}.voice-wave i:nth-child(3){animation-delay:.2s}.voice-wave i:nth-child(4){animation-delay:.3s}.voice-wave i:nth-child(5){animation-delay:.4s}.voice-wave i:nth-child(6){animation-delay:.5s}
+
+
+
+
 @keyframes pulse{from{height:10px;opacity:.5}to{height:48px;opacity:1}}
 .stop-btn{width:64px;height:64px;border:8px solid #FFD9D7;border-radius:50%;background:#FF6A68;color:white;font-size:18px;margin-top:20px}
 .tip-card{margin-top:27px;text-align:left;background:#fff;border:1px solid var(--line);border-radius:18px;padding:13px;font-size:9.5px;color:#6C7B8B;line-height:1.5}
-
-.receipt-box{
-  background:#fff;border:1px solid var(--line);border-radius:24px;padding:14px;text-align:center
-}
-.receipt-stage{
-  min-height:340px;border-radius:18px;background:linear-gradient(135deg,#9F7659,#77523E);
-  display:grid;place-items:center;overflow:hidden;padding:20px
-}
-.receipt-paper{
-  width:72%;min-height:285px;background:#F9F7F0;padding:19px 13px;color:#3C3C3C;
-  font-family:monospace;text-align:left;box-shadow:0 5px 18px rgba(0,0,0,.18);transform:rotate(-1deg)
-}
-.receipt-paper b{display:block;text-align:center;font-size:12px;margin-bottom:12px}
-.receipt-line{display:flex;justify-content:space-between;font-size:9px;margin:5px 0}
-.receipt-total{border-top:1px dashed #777;margin-top:8px;padding-top:7px}
-.receipt-barcode{height:34px;margin-top:17px;background:repeating-linear-gradient(90deg,#333 0 2px,#fff 2px 4px)}
-.receipt-preview{width:100%;max-height:360px;object-fit:contain;border-radius:18px;display:none}
 
 .accounts-total{padding:18px;margin-bottom:12px}
 .account-icon{
@@ -366,14 +348,7 @@ body{min-height:100vh}
   object-fit:contain;
   filter:drop-shadow(0 6px 10px rgba(0,0,0,.10));
 }
-.voice-mascot .mascot-image{
-  position:relative;
-  right:auto;
-  bottom:auto;
-  width:140px;
-  height:140px;
-  margin:0 auto;
-}
+
 
 
 /* --- Home mascot image v3.3 --- */
@@ -435,39 +410,6 @@ body{min-height:100vh}
 }
 
 
-/* --- Voice mascot transparent v3.5 --- */
-.voice-mascot{
-  width:170px;
-  height:170px;
-  margin:0 auto 10px;
-  display:flex;
-  align-items:flex-end;
-  justify-content:center;
-  position:relative;
-}
-.voice-mascot-image{
-  width:170px;
-  height:170px;
-  object-fit:contain;
-  object-position:center bottom;
-  display:block;
-  background:transparent;
-  border:0;
-  border-radius:0;
-  box-shadow:none;
-}
-@media(max-width:360px){
-  .voice-mascot{
-    width:150px;
-    height:150px;
-  }
-  .voice-mascot-image{
-    width:150px;
-    height:150px;
-  }
-}
-
-
 /* --- Typography system v3.6: Baloo 2 + Nunito --- */
 html,body,button,input,select,textarea{
   font-family:"Nunito","Segoe UI",Arial,sans-serif !important;
@@ -490,10 +432,7 @@ button,input,select,textarea{
 /* Judul halaman */
 .page-title,
 .modal-head h2,
-.voice-page h3{
-  font-family:"Nunito",sans-serif !important;
-  font-weight:800 !important;
-}
+
 
 /* Judul card / nama menu */
 .section-head h3,
@@ -518,7 +457,7 @@ button,input,select,textarea{
 .tab,
 .link-btn,
 .nav-item small,
-.receipt-box p,
+
 .tip-card{
   font-family:"Nunito",sans-serif !important;
   font-weight:600 !important;
@@ -639,7 +578,6 @@ button,input,select,textarea{
 .menu-card .mi-plans{background:#EEF9E9;color:#2C9B46}
 .menu-card .mi-assets{background:#FFF4DA;color:#C98715}
 .menu-card .mi-debts{background:#F2ECFF;color:#7157D8}
-.menu-card .mi-receipt{background:#E8FBF5;color:#1E9A72}
 .menu-card .mi-reports{background:#EAF0FF;color:#5576E8}
 .menu-card .mi-categories{background:#FFF0F3;color:#D85A7E}
 .menu-card .mi-settings{background:#EEF2F5;color:#5E7386}
@@ -1038,12 +976,6 @@ button,input,select,textarea{
 }
 .quick-add-option.expense .quick-add-icon{
   background:#FFEAE9;color:#D55757;
-}
-.quick-add-option.receipt .quick-add-icon{
-  background:#FFF2E2;color:#C87A25;
-}
-.quick-add-option.voice .quick-add-icon{
-  background:#EAF0FF;color:#5473C7;
 }
 @media(max-width:360px){
   .quick-add-grid{gap:8px}
@@ -2701,23 +2633,9 @@ button,input,select,textarea{
 }
 
 
-.assistant-voice-hint-v79{
-  display:block;
-  margin-top:4px;
-  color:#7D8B82;
-  font-size:7px;
-  font-weight:600;
-}
-.voice-title-v79{
-  font-size:20px;
-  margin:0;
-  color:#17345C;
-}
-.voice-copy-v79{
-  font-size:10px!important;
-  margin-top:8px!important;
-  line-height:1.55;
-}
+
+
+
 
 
 
@@ -2946,7 +2864,7 @@ html[data-theme="dark"] .btn.secondary{background:#203A2A;border-color:#31543C;c
 html[data-theme="dark"] .btn.light{background:#202B36;border-color:#31404E;color:#C1CEDA}
 html[data-theme="dark"] .btn.danger{background:#40262A;color:#FF9593}
 html[data-theme="dark"] .suggestion{background:#203248;color:#BBD3EC}
-html[data-theme="dark"] .voice-btn{background:#24312A;color:#A9D5B3}
+html[data-theme="dark"] 
 
 html[data-theme="dark"] .bottom-nav{
   background:rgba(20,29,39,.98);
@@ -3054,121 +2972,7 @@ button:active{transition:none!important}
 html{scroll-behavior:auto!important}
 
 
-/* ===== UANGKU V8.4 RECEIPT SCANNER ===== */
-.receipt-box-v84{padding:14px}
-.receipt-box-v84 .receipt-stage{position:relative}
-.receipt-scan-overlay-v84{
-  position:absolute;inset:0;z-index:4;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:7px;padding:24px;text-align:center;
-  background:rgba(20,32,27,.68);color:#fff;
-  backdrop-filter:blur(2px)
-}
-.receipt-scan-overlay-v84 b{font-size:12px}
-.receipt-scan-overlay-v84 small{font-size:8px;opacity:.86;line-height:1.4}
-.receipt-spinner-v84{
-  width:29px;height:29px;border-radius:50%;
-  border:3px solid rgba(255,255,255,.28);
-  border-top-color:#fff;
-  animation:receiptSpinV84 .75s linear infinite
-}
-@keyframes receiptSpinV84{to{transform:rotate(360deg)}}
-
-.receipt-tip-v84{
-  margin:11px 0 12px;padding:10px 11px;text-align:left;
-  border-radius:14px;background:#F4FAF1;border:1px solid #E0EEDB
-}
-.receipt-tip-v84 b{display:block;color:#31506E;font-size:9px}
-.receipt-tip-v84 span{display:block;margin-top:3px;color:#7B8980;font-size:8px;line-height:1.4}
-.receipt-status-v84{
-  min-height:18px;margin-top:9px;
-  color:#75869B;font-size:8.5px;line-height:1.4;text-align:left
-}
-
-.receipt-result-v84{
-  margin-top:11px;padding:12px;
-  border:1px solid var(--line);border-radius:17px;
-  background:#FAFCF9;text-align:left
-}
-.receipt-result-head-v84{
-  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
-  margin-bottom:11px
-}
-.receipt-result-head-v84 b{display:block;color:#17345C;font-size:11px}
-.receipt-result-head-v84 small{display:block;margin-top:2px;color:#819087;font-size:7.5px}
-.receipt-result-head-v84>span{
-  flex:none;padding:5px 7px;border-radius:999px;
-  background:#E8F7E7;color:#238B3F;font-size:7px;font-weight:800
-}
-.receipt-review-grid-v84{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-.receipt-review-grid-v84 label{min-width:0}
-.receipt-review-grid-v84 label>span{
-  display:block;margin:0 0 5px;color:#718077;font-size:7.5px;font-weight:700
-}
-.receipt-review-grid-v84 input,
-.receipt-review-grid-v84 select{
-  width:100%;min-width:0;border:1px solid #E2E9E0;border-radius:12px;
-  padding:9px 10px;background:#fff;color:#17345C;
-  font-family:"Nunito",sans-serif;font-size:9px;outline:none
-}
-.receipt-review-grid-v84 input:focus,
-.receipt-review-grid-v84 select:focus{
-  border-color:#6BC878;box-shadow:0 0 0 2px rgba(47,165,68,.08)
-}
-.receipt-raw-toggle-v84{
-  width:100%;margin-top:7px;border:0;background:transparent;
-  color:#6F8496;font-size:7.5px;text-decoration:underline
-}
-.receipt-raw-v84{
-  max-height:180px;overflow:auto;margin:8px 0 0;padding:9px;
-  border-radius:10px;background:#F0F4EE;color:#52636F;
-  font-size:7px;line-height:1.45;white-space:pre-wrap
-}
-
-html[data-theme="dark"] .receipt-tip-v84{
-  background:#1D2D24;border-color:#2D4536
-}
-html[data-theme="dark"] .receipt-tip-v84 b,
-html[data-theme="dark"] .receipt-result-head-v84 b{color:var(--text)}
-html[data-theme="dark"] .receipt-tip-v84 span,
-html[data-theme="dark"] .receipt-status-v84,
-html[data-theme="dark"] .receipt-result-head-v84 small,
-html[data-theme="dark"] .receipt-review-grid-v84 label>span{color:var(--muted)}
-html[data-theme="dark"] .receipt-result-v84{
-  background:var(--surface2);border-color:var(--line)
-}
-html[data-theme="dark"] .receipt-result-head-v84>span{
-  background:#203B2A;color:#6BD17C
-}
-html[data-theme="dark"] .receipt-review-grid-v84 input,
-html[data-theme="dark"] .receipt-review-grid-v84 select{
-  background:#141D27;color:var(--text);border-color:var(--line)
-}
-html[data-theme="dark"] .receipt-raw-v84{
-  background:#111821;color:#A7B6C4
-}
-
-@media(max-width:390px){
-  .receipt-review-grid-v84{grid-template-columns:1fr}
-}
-
-
-/* ===== UANGKU V8.5 NATIVE VOICE ===== */
-.voice-partial-v85{min-height:36px;margin:14px auto 0;max-width:360px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:10px;line-height:1.4;padding:8px 12px;border-radius:14px;background:var(--surface2);border:1px solid var(--line)}
-html[data-theme="dark"] .voice-partial-v85{background:#18222E;border-color:#2B3947}
-
-
-/* ===== UANGKU V8.6 RECEIPT ACCURACY + PERFORMANCE ===== */
-.receipt-box-v86{padding:12px}
-.receipt-box-v86 .receipt-stage{min-height:220px;contain:layout paint}
-.receipt-preview-v86{max-height:300px}
-.receipt-action-grid-v86{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.receipt-note-field-v86{grid-column:1/-1}
-.receipt-source-v86{margin:-2px 0 10px;color:var(--muted);font-size:7.5px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.receipt-source-v86 b{color:var(--text);font-weight:800}
-.receipt-scan-overlay-v84{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:rgba(20,32,27,.78)}
-.receipt-result-v86{content-visibility:auto;contain-intrinsic-size:auto 260px}
-
+/* ===== UANGKU PERFORMANCE BASE ===== */
 /* Render long pages lazily below the fold on Android WebView. */
 .content > .section,
 .content > .card{
@@ -3180,21 +2984,149 @@ html[data-theme="dark"] .voice-partial-v85{background:#18222E;border-color:#2B39
 :root{--shadow:0 3px 12px rgba(48,83,48,.055)}
 html[data-theme="dark"]{--shadow:0 4px 14px rgba(0,0,0,.18)}
 
-@media(max-width:390px){
- .receipt-action-grid-v86{grid-template-columns:1fr}
- .receipt-box-v86 .receipt-stage{min-height:190px}
+
+
+
+
+
+/* ===== UANGKU ASSISTANT TEXT LAYOUT ===== */
+.assistant-text-hint-v88{
+  display:block;
+  margin-top:5px;
+  font-size:9px;
+  line-height:1.4;
+  color:var(--muted);
+  font-weight:500;
+}
+.chat-input-text-v811{
+  grid-template-columns:1fr 54px!important;
+}
+.chat-input-text-v811 .send-btn{
+  width:54px;
+  min-width:54px;
 }
 
 
-/* ===== UANGKU V8.7 VOICE RECOVERY ===== */
-.voice-actions-v87{
+/* ===== UANGKU V8.9 — MANUAL INPUT ONLY ===== */
+.nav-add-item{touch-action:manipulation}
+
+
+/* ===== UANGKU V8.10 — CATEGORY SPLIT ===== */
+.category-type-tabs-v810{
+  margin-bottom:14px;
+}
+.category-type-tabs-v810 .tab{
   display:flex;
-  justify-content:center;
   align-items:center;
-  gap:12px;
-  min-height:72px;
+  justify-content:center;
+  gap:7px;
 }
-.voice-retry-v87{
-  width:auto!important;
-  min-width:124px;
+.category-type-tabs-v810 .tab span{
+  min-width:20px;
+  height:20px;
+  padding:0 6px;
+  border-radius:999px;
+  display:inline-grid;
+  place-items:center;
+  font-size:9px;
+  background:rgba(255,255,255,.72);
+  color:inherit;
+}
+.category-preset-note-v810{
+  padding:13px 14px;
+  border-radius:16px;
+  margin-bottom:14px;
+  font-size:10px;
+  line-height:1.55;
+}
+.category-preset-note-v810.income{
+  background:#EDF9F0;
+  border:1px solid #D1EDD7;
+  color:#467051;
+}
+.category-preset-note-v810.expense{
+  background:#FFF3EF;
+  border:1px solid #F5D8D0;
+  color:#805C53;
+}
+.category-meta-v810{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px;
+  margin-top:5px;
+}
+.category-type-chip-v810{
+  display:inline-flex;
+  align-items:center;
+  min-height:22px;
+  padding:3px 8px;
+  border-radius:999px;
+  font-size:8px;
+  font-weight:800;
+}
+.category-type-chip-v810.income{
+  background:#E5F7E9;
+  color:#3E9250;
+}
+.category-type-chip-v810.expense{
+  background:#FDEAE7;
+  color:#C46A63;
+}
+.category-type-chip-v810.both{
+  background:#EAF0F7;
+  color:#61778F;
+}
+
+html[data-theme="dark"] .category-preset-note-v810.income{
+  background:#1D3826;
+  border-color:#2B5137;
+  color:#9AD9A7;
+}
+html[data-theme="dark"] .category-preset-note-v810.expense{
+  background:#3A2726;
+  border-color:#543532;
+  color:#E9ACA5;
+}
+html[data-theme="dark"] .category-type-chip-v810.income{
+  background:#203B2A;
+  color:#7BDD8F;
+}
+html[data-theme="dark"] .category-type-chip-v810.expense{
+  background:#40262A;
+  color:#FF9593;
+}
+html[data-theme="dark"] .category-type-chip-v810.both{
+  background:#263342;
+  color:#B7C7D7;
+}
+
+
+/* ===== UANGKU V8.11 — PERFORMANCE REBUILD ===== */
+.transaction-load-more-wrap-v811{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:7px;
+  padding:14px 0 4px;
+}
+.transaction-load-more-v811{
+  min-width:170px;
+}
+.transaction-load-more-wrap-v811 small{
+  color:var(--muted);
+  font-size:9px;
+}
+.privacy-money-v811{
+  font:inherit;
+  color:inherit;
+}
+.transaction-list-v56,
+.recent-card-v65,
+.home-summary-v65,
+.home-budget-card{
+  contain:layout style;
+}
+@media(max-width:600px){
+  .transaction-list-v56{content-visibility:auto;contain-intrinsic-size:auto 620px}
 }
